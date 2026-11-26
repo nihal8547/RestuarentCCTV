@@ -1,0 +1,29 @@
+services:
+  restaurant-ai:
+    build:
+      context: .
+      args:
+        INSTALL_YOLO: ${INSTALL_YOLO:-1}   # 1 = real cameras + Model Studio (0 = tiny demo image)
+        TORCH_INDEX: ${TORCH_INDEX:-https://download.pytorch.org/whl/cpu}
+    env_file:
+      - path: .env
+        required: false
+    ports:
+      - "8000:8000"
+    volumes:
+      - restaurant-data:/data
+      # - ./backend/config:/app/backend/config   # edit zones.json without rebuilding
+    restart: unless-stopped
+    shm_size: "1gb"                       # PyTorch data loaders need shared memory (training)
+    # GPU (NVIDIA): use the override file ->  docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d --build
+
+  # Optional HTTPS reverse proxy for a public domain (see deploy/Caddyfile)
+  # caddy:
+  #   image: caddy:2
+  #   ports: ["80:80", "443:443"]
+  #   volumes: ["./deploy/Caddyfile:/etc/caddy/Caddyfile", "caddy-data:/data"]
+  #   depends_on: [restaurant-ai]
+
+volumes:
+  restaurant-data:
+  # caddy-data:

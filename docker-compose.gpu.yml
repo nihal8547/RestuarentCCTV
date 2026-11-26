@@ -1,0 +1,13 @@
+# NVIDIA GPU override. Needs the NVIDIA Container Toolkit on the host.
+#   TORCH_INDEX=https://download.pytorch.org/whl/cu121 docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d --build
+services:
+  restaurant-ai:
+    environment:
+      YOLO_DEVICE: "0"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]

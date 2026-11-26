@@ -1,0 +1,11 @@
+# YOLOv8 dataset config. Layout after labelling/export:
+#   training/dataset/images/{train,val}/*.jpg
+#   training/dataset/labels/{train,val}/*.txt
+path: dataset
+train: images/train
+val: images/val
+names:
+  0: customer
+  1: staff
+  2: table_clean
+  3: table_dirty

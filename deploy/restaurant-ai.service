@@ -1,0 +1,15 @@
+# systemd unit for bare-metal / mini-PC installs (no Docker)
+# sudo cp this to /etc/systemd/system/ && sudo systemctl enable --now restaurant-ai
+[Unit]
+Description=Restaurant AI (CCTV table management)
+After=network-online.target
+
+[Service]
+WorkingDirectory=/opt/restaurant-ai/backend
+EnvironmentFile=/opt/restaurant-ai/.env
+ExecStart=/opt/restaurant-ai/backend/venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000
+Restart=always
+User=restaurant
+
+[Install]
+WantedBy=multi-user.target

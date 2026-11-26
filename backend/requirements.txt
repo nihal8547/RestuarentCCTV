@@ -1,0 +1,10 @@
+fastapi>=0.110
+uvicorn[standard]>=0.29
+websockets>=12.0
+numpy>=1.26
+opencv-python-headless>=4.9
+tzdata
+pytest>=8.0
+httpx>=0.27
+reportlab>=4.0
+python-multipart>=0.0.9

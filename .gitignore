@@ -1,0 +1,18 @@
+node_modules/
+dist/
+__pycache__/
+*.pyc
+venv/
+.venv/
+backend/data/*.db*
+.env
+*.pt
+
+# samples / training data
+samples/*.mp4
+samples/*.avi
+training/images/
+training/labels/
+training/dataset/
+runs/
+*.pt

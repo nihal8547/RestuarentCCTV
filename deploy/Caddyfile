@@ -1,0 +1,8 @@
+# Automatic HTTPS + basic auth (MVP has no login of its own).
+# Generate hash: docker run --rm caddy caddy hash-password --plaintext 'YourPassword'
+restaurant.example.com {
+    basicauth {
+        manager REPLACE_WITH_HASH
+    }
+    reverse_proxy restaurant-ai:8000
+}

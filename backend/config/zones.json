@@ -1,0 +1,28 @@
+{
+  "frame": { "width": 960, "height": 540 },
+  "sections": [
+    { "id": "A", "name": "Section A" },
+    { "id": "B", "name": "Section B" },
+    { "id": "C", "name": "Section C" }
+  ],
+  "tables": [
+    { "id": "T01", "number": 1, "seats": 4, "section": "A", "shape": "rect",
+      "polygon": [[90, 75], [310, 75], [310, 265], [90, 265]],
+      "table_bbox": [155, 135, 245, 205] },
+    { "id": "T02", "number": 2, "seats": 4, "section": "B", "shape": "rect",
+      "polygon": [[370, 75], [590, 75], [590, 265], [370, 265]],
+      "table_bbox": [435, 135, 525, 205] },
+    { "id": "T03", "number": 3, "seats": 4, "section": "C", "shape": "rect",
+      "polygon": [[650, 75], [870, 75], [870, 265], [650, 265]],
+      "table_bbox": [715, 135, 805, 205] },
+    { "id": "T04", "number": 4, "seats": 4, "section": "A", "shape": "rect",
+      "polygon": [[90, 305], [310, 305], [310, 495], [90, 495]],
+      "table_bbox": [155, 365, 245, 435] },
+    { "id": "T05", "number": 5, "seats": 4, "section": "B", "shape": "rect",
+      "polygon": [[370, 305], [590, 305], [590, 495], [370, 495]],
+      "table_bbox": [435, 365, 525, 435] },
+    { "id": "T06", "number": 6, "seats": 4, "section": "C", "shape": "rect",
+      "polygon": [[650, 305], [870, 305], [870, 495], [650, 495]],
+      "table_bbox": [715, 365, 805, 435] }
+  ]
+}
