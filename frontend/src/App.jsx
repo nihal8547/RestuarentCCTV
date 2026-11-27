@@ -19,6 +19,14 @@ function Main() {
   const { t, lang, setLang } = useI18n()
   const { state, connected } = useLiveState(true)
   const [clock, setClock] = useState(new Date())
+  const [theme, setTheme] = useState(() => (document.documentElement.classList.contains('light') ? 'light' : 'dark'))
+  const toggleTheme = () => {
+    const next = theme === 'light' ? 'dark' : 'light'
+    document.documentElement.classList.toggle('light', next === 'light')
+    document.querySelector('meta[name=theme-color]')?.setAttribute('content', next === 'light' ? '#ffffff' : '#000000')
+    try { localStorage.setItem('theme', next) } catch { /* private mode */ }
+    setTheme(next)
+  }
   const alertSig = useAlertNotifier(state?.alerts, t)
   const tabs = [
     ['live', 'tab.live', can('staff')],
@@ -76,6 +84,10 @@ function Main() {
             <span className={`h-2 w-2 rounded-full ${connected ? 'bg-emerald-400' : 'bg-red-400 pulse-soft'}`} />
             {connected ? t('hdr.live') : t('hdr.reconnecting')}
           </span>
+          <button onClick={toggleTheme} className="rounded-md bg-slate-800 px-2.5 py-1 hover:bg-slate-700"
+            title={theme === 'light' ? 'Black theme' : 'White theme'}>
+            {theme === 'light' ? '🌙' : '☀️'}
+          </button>
           <button onClick={alertSig.enabled ? alertSig.disable : alertSig.enable}
             className={`rounded-md px-2.5 py-1 ${alertSig.enabled ? 'bg-emerald-500/15 text-emerald-300' : 'bg-sky-600 text-white hover:bg-sky-500'}`}
             title={t('staff.enable')}>

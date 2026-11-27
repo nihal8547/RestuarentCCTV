@@ -5,3 +5,72 @@
 body { @apply bg-slate-950 text-slate-100 antialiased; }
 @keyframes pulse-ring { 0%,100% { opacity: .35 } 50% { opacity: 1 } }
 .pulse-soft { animation: pulse-ring 1.6s ease-in-out infinite; }
+
+/* ===================== Theme: BLACK (default) and WHITE ===================== */
+/* Black theme: neutral true-black surfaces instead of blue-tinted slate */
+html:not(.light) body, html:not(.light) .bg-slate-950 { background-color: #000; }
+html:not(.light) .bg-slate-950\/70, html:not(.light) .bg-slate-950\/60, html:not(.light) .bg-slate-950\/50 { background-color: rgba(0,0,0,.7); }
+html:not(.light) .bg-slate-900 { background-color: #0b0b0c; }
+html:not(.light) .bg-slate-900\/70 { background-color: rgba(11,11,12,.8); }
+html:not(.light) .bg-slate-900\/80 { background-color: rgba(11,11,12,.9); }
+html:not(.light) .bg-slate-800 { background-color: #18181b; }
+html:not(.light) .bg-slate-700 { background-color: #27272a; }
+html:not(.light) .border-slate-800, html:not(.light) .divide-slate-800 > * + * { border-color: #1f1f23; }
+html:not(.light) .border-slate-700 { border-color: #2e2e33; }
+
+/* White theme */
+html.light { color-scheme: light; }
+html.light body { background-color: #f4f4f5; color: #09090b; }
+html.light .bg-slate-950 { background-color: #fff; }
+html.light .bg-slate-950\/70, html.light .bg-slate-950\/60, html.light .bg-slate-950\/50 { background-color: #fafafa; }
+html.light .bg-slate-900, html.light .bg-slate-900\/80 { background-color: #fff; }
+html.light .bg-slate-900\/70 { background-color: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+html.light .bg-slate-800 { background-color: #f1f1f3; }
+html.light .hover\:bg-slate-800:hover { background-color: #e7e7ea; }
+html.light .bg-slate-700 { background-color: #09090b; color: #fff; }
+html.light .hover\:bg-slate-700:hover { background-color: #27272a; color: #fff; }
+html.light .bg-slate-700\/50, html.light .bg-slate-600, html.light .bg-slate-500 { background-color: #d4d4d8; }
+html.light .border-slate-800, html.light .divide-slate-800 > * + * { border-color: #e4e4e7; }
+html.light .border-slate-700 { border-color: #d4d4d8; }
+html.light .border-slate-600, html.light .border-slate-500 { border-color: #a1a1aa; }
+html.light .text-slate-100, html.light .text-slate-200 { color: #09090b; }
+html.light .text-slate-300 { color: #27272a; }
+html.light .text-slate-400 { color: #52525b; }
+html.light .text-slate-500 { color: #6b6b73; }
+html.light .text-slate-600 { color: #8a8a93; }
+html.light .hover\:text-slate-200:hover { color: #09090b; }
+html.light .text-white:not([class*="bg-sky"]):not([class*="bg-red"]):not([class*="bg-emerald"]):not([class*="bg-slate-700"]):not([class*="bg-violet"]) { color: #09090b; }
+html.light .text-red-300, html.light .text-red-400 { color: #b91c1c; }
+html.light .text-emerald-300, html.light .text-emerald-400 { color: #047857; }
+html.light .text-amber-300 { color: #b45309; }
+html.light .text-sky-300 { color: #0369a1; }
+html.light .text-violet-300 { color: #6d28d9; }
+html.light .bg-black\/60 { background-color: rgba(0,0,0,.35); }
+html.light input, html.light select, html.light textarea { color: #09090b; }
+html.light ::placeholder { color: #8a8a93; }
+
+/* Floor plan SVG (inline colours) in the white theme */
+html.light svg [fill="#052e1c"] { fill: #dcfce7; }
+html.light svg [fill="#3b0d12"] { fill: #fee2e2; }
+html.light svg [fill="#3a2504"] { fill: #fef3c7; }
+html.light svg [fill="#1e293b"] { fill: #e4e4e7; }
+html.light svg [fill="#6ee7b7"] { fill: #047857; }
+html.light svg [fill="#fca5a5"] { fill: #b91c1c; }
+html.light svg [fill="#fcd34d"] { fill: #b45309; }
+html.light svg [fill="#7dd3fc"] { fill: #0369a1; }
+html.light svg [fill="#94a3b8"] { fill: #52525b; }
+html.light svg [stroke="#34d399"] { stroke: #059669; }
+html.light svg [stroke="#f87171"] { stroke: #dc2626; }
+html.light svg [stroke="#fbbf24"] { stroke: #d97706; }
+html.light svg [fill="#34d399"] { fill: #059669; }
+html.light svg [fill="#f87171"] { fill: #dc2626; }
+html.light svg [fill="#fbbf24"] { fill: #d97706; }
+/* chart grids / axes */
+html.light svg [stroke="#1e293b"], html.light svg [stroke="#334155"] { stroke: #e4e4e7; }
+html.light svg text[fill="#94a3b8"], html.light .recharts-text { fill: #52525b; }
+html.light .recharts-tooltip-wrapper > div { background: #fff !important; color: #09090b !important; border-color: #d4d4d8 !important; }
+html.light svg text[fill="#fff"]:not([font-size="18"]) { fill: #09090b; }
+html.light svg text[fill="#38bdf8"] { fill: #0369a1; }
+html.light svg text[fill="#a78bfa"] { fill: #6d28d9; }
+html.light svg text[fill="#f472b6"] { fill: #be185d; }
+html.light [style*="#0f172a" i], html.light [style*="rgb(15, 23, 42)"] { background: #ececef !important; }
