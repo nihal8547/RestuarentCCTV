@@ -1,22 +1,8 @@
 import React from 'react'
 import { useI18n } from '../i18n.jsx'
+import Icon from './Icon.jsx'
 
-const P = {
-  live: 'M3 12h4l3-8 4 16 3-8h4',
-  analytics: 'M4 20V10m6 10V4m6 16v-7m4 7H2',
-  settings: 'M12 15a3 3 0 100-6 3 3 0 000 6zm7.4-3a7.4 7.4 0 00-.1-1.2l2-1.5-2-3.5-2.3 1a7.6 7.6 0 00-2-1.2L14.5 3h-4l-.4 2.6a7.6 7.6 0 00-2 1.2l-2.3-1-2 3.5 2 1.5a7.4 7.4 0 000 2.4l-2 1.5 2 3.5 2.3-1a7.6 7.6 0 002 1.2l.4 2.6h4l.4-2.6a7.6 7.6 0 002-1.2l2.3 1 2-3.5-2-1.5c.1-.4.1-.8.1-1.2z',
-  studio: 'M12 3l2.2 5.3L20 9l-4.2 3.8L17 18.5 12 15.6 7 18.5l1.2-5.7L4 9l5.8-.7L12 3z',
-  venues: 'M3 21V8l9-5 9 5v13M9 21v-6h6v6',
-  staff: 'M16 11a4 4 0 10-8 0 4 4 0 008 0zM4 21a8 8 0 0116 0',
-}
-
-export function Icon({ id, className = 'h-5 w-5' }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
-      <path d={P[id] || P.live} />
-    </svg>
-  )
-}
+export { Icon }
 
 /** Left navigation. Fixed column on desktop, slide-in drawer on phones. */
 export default function Sidebar({ tabs, tab, onGo, name, open, onClose, alertCount, children }) {

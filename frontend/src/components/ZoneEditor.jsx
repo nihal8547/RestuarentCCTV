@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
+import Icon from './Icon.jsx'
 import { api, withToken } from '../api.js'
 import { useI18n } from '../i18n.jsx'
 
@@ -86,7 +87,7 @@ export default function ZoneEditor({ cameras = [] }) {
       setDrawing(false)
       setMsg(t('set.saved'))
     } catch (e) {
-      setMsg(`⚠ ${e.message}`)
+      setMsg(e.message)
     }
     setTimeout(() => setMsg(''), 5000)
   }
@@ -169,14 +170,14 @@ export default function ZoneEditor({ cameras = [] }) {
             {tables.map((x) => (
               <button key={x.id} onClick={() => { setSel(x.id); setDrawing(false) }} className={`rounded-md px-2.5 py-1 text-xs font-semibold ${sel === x.id ? 'bg-sky-600' : 'bg-slate-800 hover:bg-slate-700'}`}>
                 {x.id}
-                {x.polygon.length < 3 && ' ✎'}
+                {x.polygon.length < 3 && <Icon id="pencil" className="ms-1 h-3 w-3" />}
               </button>
             ))}
           </div>
           {cur && (
             <div className="space-y-2 rounded-lg border border-slate-800 bg-slate-950/50 p-3 text-xs">
               <div className="flex gap-2">
-                <button onClick={() => setDrawing((d) => !d)} className={`rounded px-2.5 py-1 ${drawing ? 'bg-sky-600' : 'bg-slate-800 hover:bg-slate-700'}`}>✎ {t('set.drawing').split(':')[0]}</button>
+                <button onClick={() => setDrawing((d) => !d)} className={`rounded px-2.5 py-1 ${drawing ? 'bg-sky-600' : 'bg-slate-800 hover:bg-slate-700'}`}><Icon id="pencil" className="me-1 h-3.5 w-3.5" />{t('set.drawing').split(':')[0]}</button>
                 <button onClick={() => patch(cur.id, (x) => ({ ...x, polygon: x.polygon.slice(0, -1) }))} className="rounded bg-slate-800 px-2.5 py-1 hover:bg-slate-700">{t('set.undo')}</button>
                 <button onClick={() => patch(cur.id, (x) => ({ ...x, polygon: [] }))} className="rounded bg-slate-800 px-2.5 py-1 hover:bg-slate-700">{t('set.clear')}</button>
               </div>

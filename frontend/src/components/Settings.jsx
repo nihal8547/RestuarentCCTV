@@ -4,7 +4,7 @@ import { useAuth } from '../AuthContext.jsx'
 import { useI18n } from '../i18n.jsx'
 import VideoSource from './VideoSource.jsx'
 import ZoneEditor from './ZoneEditor.jsx'
-import { Icon } from './Sidebar.jsx'
+import Icon from './Icon.jsx'
 
 function Section({ title, children }) {
   return (
@@ -69,7 +69,7 @@ export default function Settings() {
       setForm(r)
       setSaved(t('set.saved'))
     } catch (e) {
-      setSaved(`⚠ ${e.message}`)
+      setSaved(e.message)
     }
     setTimeout(() => setSaved(''), 4000)
   }
@@ -103,11 +103,11 @@ export default function Settings() {
   const dirty = isOwner && keys.some((k) => String(form[k]) !== String(s[k]))
   const groups = [
     ['general', 'set.sec.general', 'settings', true],
-    ['alerts', 'set.sec.alerts', 'live', true],
-    ['cameras', 'set.sec.cameras', 'studio', true],
+    ['alerts', 'set.sec.alerts', 'bell', true],
+    ['cameras', 'set.sec.cameras', 'camera', true],
     ['zones', 'set.sec.zones', 'venues', isOwner],
-    ['users', 'set.sec.users', 'staff', isOwner],
-    ['system', 'set.sec.system', 'analytics', true],
+    ['users', 'set.sec.users', 'users', isOwner],
+    ['system', 'set.sec.system', 'live', true],
   ].filter((g) => g[3])
   const cur = groups.some((g) => g[0] === sec) ? sec : 'general'
 
@@ -268,7 +268,7 @@ export default function Settings() {
       {dirty && (
         <div className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-700 bg-slate-900 px-4 py-3 lg:start-64">
           <div className="mx-auto flex max-w-[1400px] items-center justify-end gap-3">
-            <span className="me-auto text-xs text-amber-300">● {t('set.unsaved')}</span>
+            <span className="me-auto flex items-center gap-1.5 text-xs text-amber-300"><Icon id="dot" className="h-3 w-3" fill />{t('set.unsaved')}</span>
             {saved && <span className="text-xs text-slate-300">{saved}</span>}
             <button onClick={() => setForm(s)} className="rounded-lg bg-slate-800 px-4 py-2 text-sm hover:bg-slate-700">{t('set.discard')}</button>
             <button onClick={save} className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-500">{t('set.save')}</button>

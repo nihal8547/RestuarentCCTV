@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
+import Icon from './Icon.jsx'
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { api, withToken } from '../api.js'
 
@@ -110,7 +111,7 @@ function Dataset({ ov, reload }) {
             </div>
           ))}
         </div>
-        {st.warnings.map((w) => <p key={w} className="mt-2 text-xs text-amber-300">⚠ {w}</p>)}
+        {st.warnings.map((w) => <p key={w} className="mt-2 text-xs text-amber-300"><Icon id="warn" className="me-1 h-3.5 w-3.5" />{w}</p>)}
         <div className="mt-3 flex flex-wrap gap-2">
           <button className={btn} disabled={!ov.yolo.installed || running || !st.images} onClick={() => post('/api/studio/autolabel', { only_unlabeled: true }, 'Auto-labelling started')}>
             Auto-label unlabelled images
@@ -236,11 +237,11 @@ function Annotator({ ov, reload }) {
           </svg>
         ) : (
           <div className="mt-3 flex h-64 items-center justify-center rounded-lg bg-slate-950 text-sm text-slate-500">
-            {filter === 'unlabeled' ? 'Nothing left to label 🎉 - add footage or switch the filter.' : 'No images.'}
+            {filter === 'unlabeled' ? 'Nothing left to label - add footage or switch the filter.' : 'No images.'}
           </div>
         )}
         <div className="mt-3 flex flex-wrap gap-2">
-          <button className={btn2} onClick={() => go(-1)} disabled={idx === 0}>← Prev</button>
+          <button className={btn2} onClick={() => go(-1)} disabled={idx === 0}>Prev</button>
           <button className={btn} onClick={save} disabled={!cur || !dirty}>Save</button>
           <button className={btn} onClick={() => go(1)} disabled={!cur}>Save &amp; next →</button>
           <button className={btn2} disabled={!cur || sel < 0} onClick={() => { setBoxes(boxes.filter((_, i) => i !== sel)); setSel(-1); setDirty(true) }}>Delete box</button>

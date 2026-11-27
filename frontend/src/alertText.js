@@ -19,7 +19,7 @@ export function ago(ts, now, t) {
 }
 
 export const ALERT_STYLE = {
-  service_wait: { icon: '🕔', tone: 'border-red-500/40 bg-red-500/5', chip: 'bg-red-500/20 text-red-300' },
-  uncleaned_table: { icon: '🧹', tone: 'border-amber-500/40 bg-amber-500/5', chip: 'bg-amber-500/20 text-amber-300' },
-  camera_offline: { icon: '📷', tone: 'border-fuchsia-500/40 bg-fuchsia-500/5', chip: 'bg-fuchsia-500/20 text-fuchsia-300' },
+  service_wait: { icon: 'clock', tone: 'border-red-500/40 bg-red-500/5', chip: 'bg-red-500/20 text-red-300' },
+  uncleaned_table: { icon: 'clean', tone: 'border-amber-500/40 bg-amber-500/5', chip: 'bg-amber-500/20 text-amber-300' },
+  camera_offline: { icon: 'camera', tone: 'border-fuchsia-500/40 bg-fuchsia-500/5', chip: 'bg-fuchsia-500/20 text-fuchsia-300' },
 }

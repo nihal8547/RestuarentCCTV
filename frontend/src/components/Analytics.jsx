@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import {
   Bar, BarChart, CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts'
+import Icon from './Icon.jsx'
 import { api } from '../api.js'
 import { useI18n } from '../i18n.jsx'
 
@@ -158,8 +159,8 @@ export default function Analytics() {
         </div>
         <div className="flex items-center gap-2 text-xs">
           {msg && <span className="text-slate-400">{msg}</span>}
-          <button onClick={downloadPdf} className="rounded-md bg-sky-600 px-3 py-1.5 font-medium hover:bg-sky-500">⬇ {t('an.pdf')}</button>
-          <button onClick={sendNow} className="rounded-md bg-slate-800 px-3 py-1.5 hover:bg-slate-700">📤 {t('an.send')}</button>
+          <button onClick={downloadPdf} className="rounded-md bg-sky-600 px-3 py-1.5 font-medium hover:bg-sky-500"><Icon id="download" className="me-1.5 h-4 w-4" />{t('an.pdf')}</button>
+          <button onClick={sendNow} className="rounded-md bg-slate-800 px-3 py-1.5 hover:bg-slate-700"><Icon id="send" className="me-1.5 h-4 w-4" />{t('an.send')}</button>
         </div>
       </div>
 

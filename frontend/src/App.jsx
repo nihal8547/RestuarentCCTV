@@ -12,6 +12,7 @@ import Settings from './components/Settings.jsx'
 import Studio from './components/Studio.jsx'
 import Venues from './components/Venues.jsx'
 import StaffView from './components/StaffView.jsx'
+import Icon from './components/Icon.jsx'
 import Sidebar from './components/Sidebar.jsx'
 import AlertBanner from './components/AlertBanner.jsx'
 import Login from './components/Login.jsx'
@@ -64,12 +65,12 @@ function Main() {
       <div className="grid grid-cols-3 gap-2">
         <button onClick={toggleTheme} className="rounded-md bg-slate-800 px-2 py-2 hover:bg-slate-700"
           title={theme === 'light' ? 'Black theme' : 'White theme'} aria-label={theme === 'light' ? 'Black theme' : 'White theme'}>
-          {theme === 'light' ? '🌙' : '☀️'}
+          <Icon id={theme === 'light' ? 'moon' : 'sun'} className="mx-auto h-5 w-5" />
         </button>
         <button onClick={alertSig.enabled ? alertSig.disable : alertSig.enable}
           className={`rounded-md px-2 py-2 ${alertSig.enabled ? 'bg-emerald-500/15 text-emerald-300' : 'bg-sky-600 text-white hover:bg-sky-500'}`}
           title={t('staff.enable')} aria-label={t('staff.enable')}>
-          {alertSig.enabled ? '🔔' : '🔕'}
+          <Icon id={alertSig.enabled ? 'bell' : 'bellOff'} className="mx-auto h-5 w-5" />
         </button>
         <button onClick={() => setLang(lang === 'en' ? 'ar' : 'en')} className="rounded-md bg-slate-800 px-2 py-2 hover:bg-slate-700">
           {lang === 'en' ? 'ع' : 'EN'}
@@ -78,7 +79,7 @@ function Main() {
       {config?.auth_required && (
         <button onClick={logout} className="flex w-full items-center justify-between rounded-md bg-slate-800 px-3 py-2 hover:bg-slate-700" title={user.username}>
           <span className="truncate">{user.name} · {t(`role.${user.role}`)}</span>
-          <span>⎋</span>
+          <Icon id="logout" className="h-4 w-4" />
         </button>
       )}
     </>
@@ -95,7 +96,7 @@ function Main() {
           <header className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <button onClick={() => setMenu(true)} className="rounded-md bg-slate-800 p-2 hover:bg-slate-700 lg:hidden" aria-label="Menu">
-                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
+                <Icon id="menu" />
               </button>
               <div>
                 <h1 className="text-lg font-bold tracking-tight">{title}</h1>

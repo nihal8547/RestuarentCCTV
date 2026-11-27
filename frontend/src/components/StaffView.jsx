@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { api } from '../api.js'
 import { useAuth } from '../AuthContext.jsx'
 import { useI18n } from '../i18n.jsx'
+import Icon from './Icon.jsx'
 import { ALERT_STYLE, ago, alertText } from '../alertText.js'
 
 const DOT = { FREE: 'bg-emerald-500', OCCUPIED: 'bg-red-500', NEEDS_CLEANING: 'bg-amber-400' }
@@ -35,12 +36,12 @@ export default function StaffView({ state, alertsOn, onEnable }) {
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold">{t('staff.title')}</h2>
         <button onClick={enable} disabled={enabled} className={`rounded-full px-3 py-1.5 text-xs font-semibold ${enabled ? 'bg-emerald-500/15 text-emerald-300' : 'bg-sky-600 hover:bg-sky-500'}`}>
-          {enabled ? `🔔 ${t('staff.enabled')}` : `🔔 ${t('staff.enable')}`}
+          <Icon id="bell" className="me-1.5 h-4 w-4" />{enabled ? t('staff.enabled') : t('staff.enable')}
         </button>
       </div>
 
       {active.length === 0 && (
-        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 px-5 py-10 text-center text-emerald-300">✓ {t('staff.none')}</div>
+        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 px-5 py-10 text-center text-emerald-300"><Icon id="check" className="me-1.5 h-5 w-5" />{t('staff.none')}</div>
       )}
 
       {active.map((a) => {
@@ -50,13 +51,13 @@ export default function StaffView({ state, alertsOn, onEnable }) {
         return (
           <div key={a.id} className={`rounded-2xl border p-4 ${k.tone}`}>
             <div className="flex items-center gap-2">
-              <span className="text-2xl">{k.icon}</span>
+              <Icon id={k.icon} className="h-7 w-7" />
               <span className={`rounded px-2 py-0.5 text-[11px] font-bold ${k.chip}`}>{t(`alerts.${a.kind}`)}</span>
               <span className="ms-auto text-xs text-slate-400">{ago(a.ts, now, t)}</span>
             </div>
             <p className="mt-3 text-base font-medium">{alertText(a, t)}</p>
             {isAcked ? (
-              <p className="mt-3 rounded-lg bg-slate-800 px-3 py-3 text-center text-sm text-slate-300">✓ {by ? t('alerts.ackBy', { n: by }) : t('alerts.ack')}</p>
+              <p className="mt-3 rounded-lg bg-slate-800 px-3 py-3 text-center text-sm text-slate-300"><Icon id="check" className="me-1.5 h-4 w-4" />{by ? t('alerts.ackBy', { n: by }) : t('alerts.ack')}</p>
             ) : (
               <button onClick={() => onIt(a)} className="mt-3 w-full rounded-xl bg-sky-600 py-4 text-lg font-bold active:bg-sky-700">
                 {t('staff.onIt')}
@@ -76,7 +77,7 @@ export default function StaffView({ state, alertsOn, onEnable }) {
                 {tb.id}
               </div>
               <div className="mt-1 text-[11px] text-slate-400" dir="ltr">
-                {tb.state === 'OCCUPIED' ? `${tb.guests}👤 ${tb.timer}` : tb.state === 'NEEDS_CLEANING' ? `🧹 ${tb.timer}` : '—'}
+                {tb.state === 'OCCUPIED' ? `${tb.guests} · ${tb.timer}` : tb.state === 'NEEDS_CLEANING' ? `${t('floor.dirty')} · ${tb.timer}` : '—'}
               </div>
             </div>
           ))}

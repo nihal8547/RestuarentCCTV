@@ -58,7 +58,7 @@ export default function useAlertNotifier(alerts = [], t) {
   useEffect(() => {
     if (!enabled || !active) { document.title = base.current; return }
     let on = false
-    const i = setInterval(() => { on = !on; document.title = on ? `🔴 (${active}) ALERT` : base.current }, 900)
+    const i = setInterval(() => { on = !on; document.title = on ? `(${active}) ALERT` : base.current }, 900)
     return () => { clearInterval(i); document.title = base.current }
   }, [enabled, active])
 

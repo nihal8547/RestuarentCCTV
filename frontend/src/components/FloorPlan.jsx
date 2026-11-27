@@ -51,7 +51,7 @@ function Table({ t, tr, onPick }) {
       </text>
       <text x={cx} y={cy + 7} textAnchor="middle" fill={c.text} fontSize="12" fontWeight="700">
         {t.camera_online === false
-          ? '📷✕'
+          ? tr('set.offline')
           : t.state === 'FREE'
             ? tr('floor.free')
             : t.state === 'OCCUPIED'

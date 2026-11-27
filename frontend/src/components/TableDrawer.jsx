@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react'
+import Icon from './Icon.jsx'
 import { api } from '../api.js'
 import { useAuth, RANK } from '../AuthContext.jsx'
 import { useI18n } from '../i18n.jsx'
@@ -66,7 +67,7 @@ export default function TableDrawer({ table, onClose }) {
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-bold">{tr('tbl.title', { id: table.id })}</h3>
           <button onClick={onClose} className="rounded-md px-2 py-1 text-slate-400 hover:bg-slate-800" aria-label={tr('tbl.close')}>
-            ✕
+            <Icon id="x" className="h-5 w-5" />
           </button>
         </div>
         <div className="mt-2 flex flex-wrap gap-2">

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import Icon from './Icon.jsx'
 import { api } from '../api.js'
 import { ago } from '../alertText.js'
 import { useI18n } from '../i18n.jsx'
@@ -82,9 +83,9 @@ export default function Venues() {
                     ))}
                   </div>
                   {(v.summary.active_alerts || []).slice(0, 2).map((a, i) => (
-                    <p key={i} className="mt-2 truncate rounded bg-red-500/10 px-2 py-1 text-[11px] text-red-300" title={a.message}>⚠ {a.message}</p>
+                    <p key={i} className="mt-2 truncate rounded bg-red-500/10 px-2 py-1 text-[11px] text-red-300" title={a.message}><Icon id="warn" className="me-1 h-3 w-3" />{a.message}</p>
                   ))}
-                  {camsDown > 0 && <p className="mt-2 text-[11px] text-fuchsia-300">📷 {t('ven.camsDown', { n: camsDown })}</p>}
+                  {camsDown > 0 && <p className="mt-2 text-[11px] text-fuchsia-300"><Icon id="cameraOff" className="me-1 h-3 w-3" />{t('ven.camsDown', { n: camsDown })}</p>}
                 </>
               ) : (
                 <p className="mt-4 text-xs text-slate-500">{t('ven.never')}</p>

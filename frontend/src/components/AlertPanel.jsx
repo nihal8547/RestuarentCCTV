@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { api } from '../api.js'
 import { useAuth } from '../AuthContext.jsx'
 import { useI18n } from '../i18n.jsx'
+import Icon from './Icon.jsx'
 import { ALERT_STYLE, ago, alertText } from '../alertText.js'
 
 export default function AlertPanel({ alerts = [] }) {
@@ -40,7 +41,7 @@ export default function AlertPanel({ alerts = [] }) {
           const isAcked = a.acked || acked[a.id]
           return (
             <li key={a.id} className={`flex items-start gap-3 px-4 py-3 ${a.resolved ? 'opacity-50' : ''}`}>
-              <div className={`mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-lg border ${k.tone}`}>{k.icon}</div>
+              <div className={`mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-lg border ${k.tone}`}><Icon id={k.icon} className="h-5 w-5" /></div>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wider ${k.chip}`}>{t(`alerts.${a.kind}`)}</span>
@@ -56,7 +57,7 @@ export default function AlertPanel({ alerts = [] }) {
                       {t('alerts.ack')}
                     </button>
                   )}
-                  {!a.resolved && isAcked && <span className="text-slate-400">{by ? t('alerts.ackBy', { n: by }) : t('alerts.ack') + ' ✓'}</span>}
+                  {!a.resolved && isAcked && <span className="text-slate-400">{by ? t('alerts.ackBy', { n: by }) : t('alerts.ack')}<Icon id="check" className="ms-1 h-3.5 w-3.5" /></span>}
                 </div>
               </div>
             </li>
