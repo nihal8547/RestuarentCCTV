@@ -38,22 +38,35 @@ class VideoSource:
         self.source, self.size = source, size
         self.is_file = not source.lower().startswith(("rtsp://", "rtmp://", "http://", "https://"))
         self.cap: cv2.VideoCapture | None = None
+        self._t0 = time.time()
+        self._pos = 0
         self._open()
 
     def _open(self) -> None:
         self.cap = cv2.VideoCapture(self.source)
         if not self.is_file:
             self.cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+        else:
+            self.native_fps = self.cap.get(cv2.CAP_PROP_FPS) or 25.0
+            if not 1 <= self.native_fps <= 120:
+                self.native_fps = 25.0
+            self._t0, self._pos = time.time(), 0
 
     def read(self) -> np.ndarray | None:
         if self.cap is None or not self.cap.isOpened():
             time.sleep(2)
             self._open()
             return None
+        if self.is_file:   # play in real time: if analysis is slower than the video, skip frames instead of slow-motion
+            target = int((time.time() - self._t0) * self.native_fps)
+            while self._pos < target - 1 and self.cap.grab():
+                self._pos += 1
         ok, frame = self.cap.read()
+        self._pos += 1
         if not ok:
             if self.is_file:
                 self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                self._t0, self._pos = time.time(), 0
             else:
                 log.warning("stream lost, reconnecting...")
                 self.cap.release()
@@ -244,11 +257,69 @@ class Pipeline(threading.Thread):
             }
         self.trackers, self.polys, self.geometry, self.zones = trackers, polys, geom, zones
 
+    # ---------------------------------------------- fit zones to the real video
+    def _probe_frame(self, spec: str):
+        cap = cv2.VideoCapture(spec)
+        try:
+            for _ in range(5):
+                ok, fr = cap.read()
+                if ok:
+                    return fr
+        finally:
+            cap.release()
+        return None
+
+    def _auto_zones(self, frame: np.ndarray, size: tuple[int, int], old: dict) -> dict:
+        """Table zones for a new video: YOLO 'dining table' boxes if available, else an editable 3x2 grid."""
+        w, h = size
+        boxes: list[list[int]] = []
+        try:
+            from ultralytics import YOLO
+            res = YOLO(self.model_path())(cv2.resize(frame, size), conf=0.15, imgsz=self.s.yolo_imgsz, verbose=False)[0]
+            names = res.names
+            for b in res.boxes:
+                if names[int(b.cls)] in ("dining table", "table_clean", "table_dirty"):
+                    boxes.append([int(v) for v in b.xyxy[0].tolist()])
+        except Exception:
+            log.info("auto table detection unavailable - using a grid")
+        boxes = sorted(boxes, key=lambda b: (b[1] // max(1, h // 3), b[0]))[:12]
+        if not boxes:                                   # fallback: 3 columns x 2 rows
+            cw, ch = w // 3, h // 2
+            boxes = [[c * cw + 30, r * ch + 30, (c + 1) * cw - 30, (r + 1) * ch - 30] for r in range(2) for c in range(3)]
+        tables = []
+        for i, (x1, y1, x2, y2) in enumerate(boxes, 1):
+            px, py = int((x2 - x1) * 0.35), int((y2 - y1) * 0.35)      # margin so people sitting around count
+            x1, y1, x2, y2 = max(0, x1 - px), max(0, y1 - py), min(w, x2 + px), min(h, y2 + py)
+            tables.append({"id": f"T{i:02d}", "number": i, "seats": 4, "section": "A", "shape": "rect",
+                           "camera": self.cam_ids[0], "polygon": [[x1, y1], [x2, y1], [x2, y2], [x1, y2]],
+                           "table_bbox": None})
+        return {"frame": {"width": w, "height": h}, "sections": [{"id": "A", "name": "Section A"}], "tables": tables}
+
+    def _fit_to_source(self, spec: str) -> None:
+        """Real video: use its aspect ratio and fresh table zones (demo zones would not match). sim: restore demo zones."""
+        if spec == "sim":
+            zones = self.s.load_zones()
+            self.size = (zones["frame"]["width"], zones["frame"]["height"])
+            self.db.set_setting("zones", None)
+        else:
+            fr = self._probe_frame(spec)
+            if fr is None:
+                return
+            fh, fw = fr.shape[:2]
+            self.size = (960, max(240, int(round(960 * fh / fw / 2)) * 2))
+            zones = self._auto_zones(fr, self.size, self.zones)
+            self.db.set_setting("zones", zones)
+        with self._proc_lock:
+            self._build_tables(zones)
+            self.trackers = [TableTracker(t.id, t.number, t.seats, t.section, self.th) for t in self.trackers]
+
     def set_source(self, cam: str, spec: str) -> None:
         """Switch a camera to another source at runtime (sim / video file / RTSP) and persist it."""
         if cam not in self.workers:
             raise KeyError(cam)
         self.workers[cam].stop()
+        if len(self.cam_ids) == 1:
+            self._fit_to_source(spec)
         w = CameraWorker(self, cam, spec)
         self.workers[cam] = w
         self.s.cameras[cam] = spec

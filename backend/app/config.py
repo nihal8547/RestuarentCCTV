@@ -116,7 +116,7 @@ def load_settings() -> Settings:
         anchor=os.getenv("ANCHOR", "center"),
         yolo_model=os.getenv("YOLO_MODEL", "yolov8n.pt"),
         yolo_conf=_num("YOLO_CONF", 0.35),
-        yolo_imgsz=int(_num("YOLO_IMGSZ", 960)),
+        yolo_imgsz=int(_num("YOLO_IMGSZ", 640)),
         yolo_device=os.getenv("YOLO_DEVICE", ""),
         staff_hsv_low=_tuple3("STAFF_HSV_LOW", None),
         staff_hsv_high=_tuple3("STAFF_HSV_HIGH", None),
