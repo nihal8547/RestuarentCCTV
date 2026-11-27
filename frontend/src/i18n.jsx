@@ -92,6 +92,7 @@ const en = {
   'ev.alert': 'Alert',
 
   'alerts.title': 'STAFF ALERTS',
+  'banner.count': '{n} active',
   'alerts.active': '{n} active',
   'alerts.clear': 'all clear',
   'alerts.empty': 'No alerts yet. Alerts appear when guests wait too long for service, a table is left uncleaned, or a camera goes offline.',
@@ -331,6 +332,7 @@ const ar = {
   'ev.alert': 'تنبيه',
 
   'alerts.title': 'تنبيهات الموظفين',
+  'banner.count': '{n} نشط',
   'alerts.active': '{n} نشطة',
   'alerts.clear': 'لا توجد تنبيهات',
   'alerts.empty': 'لا توجد تنبيهات بعد. تظهر التنبيهات عند انتظار الضيوف طويلاً، أو ترك طاولة دون تنظيف، أو انقطاع كاميرا.',

@@ -12,6 +12,7 @@ import Settings from './components/Settings.jsx'
 import Studio from './components/Studio.jsx'
 import Venues from './components/Venues.jsx'
 import StaffView from './components/StaffView.jsx'
+import AlertBanner from './components/AlertBanner.jsx'
 import Login from './components/Login.jsx'
 
 function Main() {
@@ -61,7 +62,7 @@ function Main() {
           <p className="text-xs text-slate-500">{t('app.sub')}</p>
         </div>
 
-        <nav className="flex flex-wrap rounded-lg border border-slate-800 bg-slate-900 p-1 text-sm">
+        <nav className="flex max-w-full overflow-x-auto whitespace-nowrap rounded-lg border border-slate-800 bg-slate-900 p-1 text-sm">
           {tabs.map(([id, key]) => (
             <button
               key={id}
@@ -85,12 +86,12 @@ function Main() {
             {connected ? t('hdr.live') : t('hdr.reconnecting')}
           </span>
           <button onClick={toggleTheme} className="rounded-md bg-slate-800 px-2.5 py-1 hover:bg-slate-700"
-            title={theme === 'light' ? 'Black theme' : 'White theme'}>
+            title={theme === 'light' ? 'Black theme' : 'White theme'} aria-label={theme === 'light' ? 'Black theme' : 'White theme'}>
             {theme === 'light' ? '🌙' : '☀️'}
           </button>
           <button onClick={alertSig.enabled ? alertSig.disable : alertSig.enable}
             className={`rounded-md px-2.5 py-1 ${alertSig.enabled ? 'bg-emerald-500/15 text-emerald-300' : 'bg-sky-600 text-white hover:bg-sky-500'}`}
-            title={t('staff.enable')}>
+            title={t('staff.enable')} aria-label={t('staff.enable')}>
             {alertSig.enabled ? '🔔' : '🔕'}
           </button>
           <button onClick={() => setLang(lang === 'en' ? 'ar' : 'en')} className="rounded-md bg-slate-800 px-2.5 py-1 hover:bg-slate-700">
@@ -104,17 +105,16 @@ function Main() {
         </div>
       </header>
 
+      {tab !== 'staff' && <AlertBanner alerts={state?.alerts} onView={() => go('live')} />}
+
       {tab === 'live' && (
         <div className="space-y-4">
           <OccupancyHeader state={state} />
           <div className="grid gap-4 xl:grid-cols-12">
-            <div className="space-y-4 xl:col-span-7">
-              <LiveFeed mode={state?.mode} fps={state?.fps} cameras={state?.cameras} />
-              <AlertPanel alerts={state?.alerts} />
-            </div>
-            <div className="xl:col-span-5">
-              <FloorPlan state={state} />
-            </div>
+            {/* phone order: floor plan, alerts, camera. desktop: camera + alerts left, floor plan right */}
+            <div className="order-3 xl:order-none xl:col-span-7 xl:row-start-1"><LiveFeed mode={state?.mode} fps={state?.fps} cameras={state?.cameras} /></div>
+            <div className="order-2 xl:order-none xl:col-span-7 xl:row-start-2"><AlertPanel alerts={state?.alerts} /></div>
+            <div className="order-1 xl:order-none xl:col-span-5 xl:col-start-8 xl:row-span-2 xl:row-start-1"><FloorPlan state={state} /></div>
           </div>
         </div>
       )}
