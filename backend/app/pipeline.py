@@ -432,16 +432,25 @@ class Pipeline(threading.Thread):
     def _zone_counts(self, cam_id: str, dets: list[Detection]) -> dict[str, tuple[int, bool]]:
         res: dict[str, list] = {t.id: [0, False] for t in self.trackers if self.geometry[t.id]["camera"] == cam_id}
         for d in dets:
-            pt = d.anchor(self.s.anchor)
             if d.cls != "person":
                 continue
-            for tid in res:
-                dist = cv2.pointPolygonTest(self.polys[tid], pt, True)
-                if d.is_staff:
-                    if dist >= -self.s.staff_margin_px:
+            pt = d.anchor(self.s.anchor)
+            # seated people are often partly hidden and sit at the table edge: test the box centre, the feet and a
+            # point slightly above centre, and give each customer to ONE table (the one they are deepest inside)
+            cx, h = (d.x1 + d.x2) / 2, d.y2 - d.y1
+            pts = [pt, (cx, d.y2), (cx, d.y1 + h * 0.4)]
+            if d.is_staff:
+                for tid in res:
+                    if cv2.pointPolygonTest(self.polys[tid], pt, True) >= -self.s.staff_margin_px:
                         res[tid][1] = True
-                elif dist >= 0:
-                    res[tid][0] += 1
+                continue
+            best, best_d = None, 0.0
+            for tid in res:
+                dist = max(cv2.pointPolygonTest(self.polys[tid], q, True) for q in pts)
+                if dist >= -4 and (best is None or dist > best_d):
+                    best, best_d = tid, dist
+            if best:
+                res[best][0] += 1
         return {k: (v[0], v[1]) for k, v in res.items()}
 
     def _zone_of(self, cam_id: str):

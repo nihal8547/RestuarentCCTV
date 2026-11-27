@@ -88,7 +88,7 @@ class YoloDetector:
 
     def detect(self, frame: np.ndarray) -> list[Detection]:
         classes = list(self.roles) if self.custom else [0] + ITEM_CLASSES
-        kw = dict(classes=classes, conf=min(self.conf, 0.25), imgsz=self.imgsz, device=self.device, verbose=False)
+        kw = dict(classes=classes, conf=min(self.conf, 0.2), iou=0.6, max_det=150, imgsz=self.imgsz, device=self.device, verbose=False)
         if self.use_bytetrack:
             res = self.model.track(frame, persist=True, tracker="bytetrack.yaml", **kw)[0]
         else:

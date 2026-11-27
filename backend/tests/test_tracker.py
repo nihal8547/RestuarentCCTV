@@ -38,3 +38,18 @@ def test_track_expires_after_long_absence():
     for _ in range(5):
         tr.update([])
     assert tr.update([box(100, 100)])[0].track_id != first
+
+
+def test_missed_person_is_kept_alive_for_a_few_frames():
+    from app.detector import Detection
+    from app.tracker import SimpleTracker
+    tr = SimpleTracker()
+    for _ in range(5):
+        out = tr.update([Detection(100, 100, 160, 220)])
+    assert len(out) == 1
+    for _ in range(3):                      # detector misses him for 3 frames
+        out = tr.update([])
+        assert len(out) == 1 and out[0].track_id == 1
+    for _ in range(20):                     # truly gone -> no ghost forever
+        out = tr.update([])
+    assert out == []

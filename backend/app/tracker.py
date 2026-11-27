@@ -18,15 +18,17 @@ def _iou(a: Detection, b: Detection) -> float:
 
 
 class _Track:
-    __slots__ = ("id", "det", "missed")
+    __slots__ = ("id", "det", "missed", "hits")
 
     def __init__(self, tid: int, det: Detection):
-        self.id, self.det, self.missed = tid, det, 0
+        self.id, self.det, self.missed, self.hits = tid, det, 0, 1
 
 
 class SimpleTracker:
-    def __init__(self, max_missed: int = 20, iou_min: float = 0.1, max_dist: float = 90.0):
+    def __init__(self, max_missed: int = 20, iou_min: float = 0.1, max_dist: float = 90.0,
+                 ghost_frames: int = 10, ghost_min_hits: int = 4):
         self.max_missed, self.iou_min, self.max_dist = max_missed, iou_min, max_dist
+        self.ghost_frames, self.ghost_min_hits = ghost_frames, ghost_min_hits
         self.tracks: list[_Track] = []
         self._next = 1
 
@@ -49,6 +51,7 @@ class SimpleTracker:
             used_d.add(di)
             t = self.tracks[ti]
             t.det, t.missed = dets[di], 0
+            t.hits += 1
             dets[di].track_id = t.id
         for ti, t in enumerate(self.tracks):
             if ti not in used_t:
@@ -59,4 +62,9 @@ class SimpleTracker:
                 d.track_id = self._next
                 self.tracks.append(_Track(self._next, d))
                 self._next += 1
-        return dets
+        # A person the detector misses for a few frames (occlusion by a neighbour, chair, glare) is kept alive:
+        # re-emit the last known box so table counts do not flicker or drop.
+        ghosts = [Detection(t.det.x1, t.det.y1, t.det.x2, t.det.y2, t.det.conf * 0.8, t.det.is_staff, t.id, "person")
+                  for t in self.tracks
+                  if t.det.cls == "person" and 0 < t.missed <= self.ghost_frames and t.hits >= self.ghost_min_hits]
+        return dets + ghosts
