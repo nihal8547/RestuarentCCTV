@@ -8,7 +8,7 @@ from pathlib import Path
 _tmp = tempfile.mkdtemp()
 os.environ.update({
     "DB_PATH": str(Path(_tmp) / "t.db"), "AUTH_ENABLED": "1", "ADMIN_USER": "boss", "ADMIN_PASSWORD": "bosspass1",
-    "AUTH_SECRET": "test-secret", "HUB_ENABLED": "1", "CAMERA_OFFLINE_SEC": "3", "VIDEO_SOURCE": "sim",
+    "AUTH_SECRET": "test-secret", "HUB_ENABLED": "1", "CAMERA_OFFLINE_SEC": "3", "WAIT_ALERT_SEC": "30", "CLEAN_ALERT_SEC": "20", "VIDEO_SOURCE": "sim",
     "FRONTEND_DIST": str(Path(_tmp) / "nodist"),
 })
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -88,25 +88,18 @@ def test_zones_edit(client, owner):
     assert t7["seats"] == 6 and st["restaurant"]["tables_total"] == 7
 
 
-def test_camera_offline_alert(client, owner):
-    assert client.post("/api/sim/camera/cam1", json={"offline": True}, headers=owner).status_code == 200
-    deadline, found = time.time() + 12, None
-    while time.time() < deadline and not found:
-        time.sleep(0.5)
-        found = next((a for a in client.get("/api/state", headers=owner).json()["alerts"]
-                      if a["kind"] == "camera_offline" and not a["resolved"]), None)
-    assert found, "camera_offline alert not raised"
-    assert client.get("/api/state", headers=owner).json()["cameras"][0]["online"] is False
-    client.post("/api/sim/camera/cam1", json={"offline": False}, headers=owner)
-    deadline, resolved = time.time() + 8, False
-    while time.time() < deadline and not resolved:
-        time.sleep(0.5)
-        resolved = any(a["kind"] == "camera_offline" and a["resolved"]
-                       for a in client.get("/api/state", headers=owner).json()["alerts"])
-    assert resolved
+def test_no_demo_data_and_production_thresholds(client, owner):
+    st = client.get("/api/state", headers=owner).json()
+    assert "demo" not in st["thresholds"]
+    wk = client.get("/api/analytics/weekly", headers=owner).json()
+    assert sum(d.get("parties", 0) for d in wk.get("daily", [])) == 0     # no fabricated history
 
 
 def test_ack_records_name(client, owner):
+    from app.main import pipeline      # raise a real alert through the engine instead of waiting for the simulator
+    pipeline._raise_alert(time.time(), "service_wait", "T01", "warning", "Table 01: guests waiting 05:00 with no waiter visit",
+                          {"number": 1, "guests": 2, "secs": 300})
+    time.sleep(0.8)
     alert = next(a for a in client.get("/api/state", headers=owner).json()["alerts"])
     r = client.post(f"/api/alerts/{alert['id']}/ack", json={"name": "Ravi"}, headers=owner)
     assert r.json()["by"] == "Ravi"
@@ -116,6 +109,10 @@ def test_ack_records_name(client, owner):
 
 
 def test_reports_and_service_analytics(client, owner):
+    from app.main import db           # real analytics need real sessions: record one finished party
+    now = time.time()
+    sid = db.start_session("T01", now - 3000, 3)
+    db.update_session(sid, end_ts=now - 600, guests=3, visits=2, first_visit_ts=now - 2700, cleaned_ts=now - 500)
     pdf = client.get("/api/reports/weekly.pdf", headers=owner)
     assert pdf.status_code == 200 and pdf.content.startswith(b"%PDF") and len(pdf.content) > 2000
     txt = client.get("/api/reports/weekly.txt", headers=owner).text
@@ -201,7 +198,6 @@ def test_video_source_endpoints(client, owner):
     bad = client.post("/api/source/upload", files={"file": ("x.mp4", b"not a video")}, data={"use_now": "false"}, headers=owner)
     assert bad.status_code == 400
     assert client.post("/api/source", json={"source": "sim"}, headers=owner).json()["mode"] == "sim"
-    assert client.post("/api/data/purge-demo", headers=owner).status_code == 200
 
 
 def test_uniform_apply_and_clear(client, owner):

@@ -14,8 +14,6 @@ python -c "import ultralytics" 2>nul || (
 if not exist frontend\dist (pushd frontend & call npm install --no-audit --no-fund & call npm run build & popd)
 cd backend
 set VIDEO_SOURCE=%~1
-if "%SEED_DEMO_DATA%"=="" set SEED_DEMO_DATA=0
-if "%DEMO_MODE%"=="" set DEMO_MODE=0
 echo Open http://localhost:8000
 python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 endlocal

@@ -98,7 +98,6 @@ export default function VideoSource() {
       {cam && <UniformCalibrator cam={cam} />}
       <div className="flex flex-wrap items-center gap-2">
         <button className={btn2} disabled={busy} onClick={() => setSrc('sim')}>Back to simulator</button>
-        <button className={btn2} disabled={busy} onClick={() => { if (confirm('Delete the demo history (fake weekly data) from the database?')) run(() => api('/api/data/purge-demo', { method: 'POST' }), 'Demo history removed - analytics now show real data only.') }}>Remove demo history</button>
       </div>
       {msg && <p className="text-xs text-sky-300">{msg}</p>}
     </div>

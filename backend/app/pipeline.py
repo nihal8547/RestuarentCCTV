@@ -88,7 +88,6 @@ class CameraWorker(threading.Thread):
         self.started_ts = time.time()
         self.last_frame_ts = 0.0
         self.fps = 0.0
-        self.forced_offline = False  # demo switch (simulator only)
         self.last_raw: np.ndarray | None = None
         self.last_dets: list | None = None
         self.detect_ms = 0.0
@@ -99,8 +98,6 @@ class CameraWorker(threading.Thread):
 
     def online(self, now: float) -> bool:
         ref = self.last_frame_ts or self.started_ts
-        if self.forced_offline:
-            return False
         if self.last_frame_ts == 0.0:  # never produced a frame: allow a startup grace period
             return now - ref < max(30.0, self.pipe.s.camera_offline_sec * 3)
         return now - ref < self.pipe.s.camera_offline_sec
@@ -149,10 +146,6 @@ class CameraWorker(threading.Thread):
         while not self._stop.is_set():
             t0 = time.time()
             try:
-                if self.forced_offline:
-                    self._publish(self._placeholder())
-                    time.sleep(0.5)
-                    continue
                 if self.is_sim:
                     frame, dets = source.read()
                 else:
@@ -296,7 +289,7 @@ class Pipeline(threading.Thread):
         return {"frame": {"width": w, "height": h}, "sections": [{"id": "A", "name": "Section A"}], "tables": tables}
 
     def _fit_to_source(self, spec: str) -> None:
-        """Real video: use its aspect ratio and fresh table zones (demo zones would not match). sim: restore demo zones."""
+        """Real video: use its aspect ratio and fresh table zones (the default zones would not match). sim: restore the default zones."""
         if spec == "sim":
             zones = self.s.load_zones()
             self.size = (zones["frame"]["width"], zones["frame"]["height"])
@@ -405,14 +398,6 @@ class Pipeline(threading.Thread):
                     return True
         return False
 
-    def set_camera_offline(self, cam_id: str, offline: bool) -> bool:
-        w = self.workers.get(cam_id)
-        if not w or not w.is_sim:
-            return False
-        w.forced_offline = offline
-        return True
-
-    # --------------------------------------------------------- internals
     def _load_recent_alerts(self) -> None:
         now = time.time()
         self.db.close_open_alerts(now)
@@ -661,8 +646,7 @@ class Pipeline(threading.Thread):
                 "seat_capacity": seat_cap,
                 "needs_cleaning": sum(1 for t in tables if t["state"] == "NEEDS_CLEANING")},
             "tables": tables, "sections": sections, "recommendation": rec, "alerts": alerts,
-            "thresholds": {"wait_alert_sec": self.th.wait_alert_sec, "clean_alert_sec": self.th.clean_alert_sec,
-                           "demo": self.s.demo_mode}}
+            "thresholds": {"wait_alert_sec": self.th.wait_alert_sec, "clean_alert_sec": self.th.clean_alert_sec}}
 
     # ---------------------------------------------------------------- loop
     def run(self) -> None:

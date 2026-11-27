@@ -88,11 +88,6 @@ export default function Settings() {
     const pw = window.prompt(t('set.newPw'))
     if (pw) await api(`/api/users/${u.id}/password`, { method: 'PUT', body: { password: pw } }).catch((e) => alert(e.message))
   }
-  const simToggle = async (cam, offline) => {
-    await api(`/api/sim/camera/${cam}`, { method: 'POST', body: { offline } })
-    load()
-  }
-
   const num = (k, label, help, step = 1) => (
     <Field label={label} help={help}>
       <input type="number" step={step} disabled={!isOwner} value={form[k]} onChange={(e) => set(k, e.target.value)} className={inputCls} />
@@ -188,16 +183,10 @@ export default function Settings() {
                   </span>
                   <span className="flex items-center gap-2">
                     <Chip ok={c.online}>{c.online ? t('set.online') : t('set.offline')}</Chip>
-                    {isOwner && c.sim && (
-                      <button onClick={() => simToggle(c.id, c.online)} className="rounded bg-slate-800 px-2.5 py-1 text-xs hover:bg-slate-700">
-                        {c.online ? t('set.simOff') : t('set.simOn')}
-                      </button>
-                    )}
                   </span>
                 </li>
               ))}
             </ul>
-            {s.cameras.some((c) => c.sim) && <p className="mt-2 text-[11px] text-slate-500">{t('set.simHelp')}</p>}
           </Section>
             {isOwner && (
         <Section title="Video source - real video / live CCTV">

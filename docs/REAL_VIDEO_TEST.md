@@ -3,15 +3,15 @@
 You do **not** need a simulator or any code. Three ways, easiest first:
 
 ## A. In the dashboard (no restart)
-1. Start anything (`./run_demo.sh` or `docker compose up`), log in as owner.
+1. Start anything (`./run_simulator.sh` or `docker compose up`), log in as owner.
 2. **Settings → Video source → Upload & use** - choose an MP4 (CCTV export or phone video, H.264). It loops through the real YOLO AI.
 3. **Settings → Table zones**: Add table → click the table corners on the video frame → Seats/Section → *Save & apply zones*.
 4. **Settings → Staff uniform colour**: click a waiter's shirt → *Apply*. (Colour cue is OFF until you do this; without it staff are inferred from behaviour only.)
 5. For a short clip lower the alert times: Settings → Service alert 30 s / Cleaning alert 20 s (production: 300 / 120).
-6. Optional: **Remove demo history** so analytics only show real data. Table drawer → *Set as clean reference* on an empty clean table.
+6. Analytics only ever show real data. Table drawer → *Set as clean reference* on an empty clean table.
 
 ## B. Command line, real-time loop
-`./run_real.sh samples/lunch.mp4` (Windows: `run_real.bat samples\lunch.mp4`). Real thresholds, no demo data.
+`./run_real.sh samples/lunch.mp4` (Windows: `run_real.bat samples\lunch.mp4`). Real thresholds, no fake data.
 
 ## C. Fast offline analysis (best for a first accuracy check)
 ```bash

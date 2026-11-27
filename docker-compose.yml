@@ -3,7 +3,7 @@ services:
     build:
       context: .
       args:
-        INSTALL_YOLO: ${INSTALL_YOLO:-1}   # 1 = real cameras + Model Studio (0 = tiny demo image)
+        INSTALL_YOLO: ${INSTALL_YOLO:-1}   # 1 = real cameras + Model Studio (0 = tiny simulator-only image)
         TORCH_INDEX: ${TORCH_INDEX:-https://download.pytorch.org/whl/cpu}
     env_file:
       - path: .env

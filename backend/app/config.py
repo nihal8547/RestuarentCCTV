@@ -38,7 +38,6 @@ class Settings:
     fps: float = 15.0
     jpeg_quality: int = 80
     # --- thresholds (seconds) -----------------------------------------
-    demo_mode: bool = True
     wait_alert_sec: float = 300.0     # guests seated, no waiter visit
     clean_alert_sec: float = 120.0    # guests left, table not reset to "Clean Table"
     occupy_confirm_sec: float = 1.5   # presence needed to flip FREE -> OCCUPIED
@@ -64,7 +63,6 @@ class Settings:
     zones_file: Path = ROOT / "config" / "zones.json"
     frontend_dist: Path = ROOT.parent / "frontend" / "dist"
     timezone: str = "Asia/Qatar"
-    seed_demo_data: bool = True
     cors_origins: list = field(default_factory=lambda: ["*"])
     # --- cameras ----------------------------------------------------------
     cameras: dict = field(default_factory=dict)       # {"cam1": "rtsp://..."}; sim -> {"cam1": "sim"}
@@ -98,15 +96,12 @@ class Settings:
 
 def load_settings() -> Settings:
     _src = os.getenv("VIDEO_SOURCE", "sim")
-    demo = _bool("DEMO_MODE", _src == "sim")          # real camera/video -> real (production) thresholds by default
     s = Settings(
         video_source=os.getenv("VIDEO_SOURCE", "sim"),
         fps=_num("FPS", 15),
         jpeg_quality=int(_num("JPEG_QUALITY", 80)),
-        demo_mode=demo,
-        # Demo mode shrinks the alert thresholds so alerts are visible within a minute.
-        wait_alert_sec=_num("WAIT_ALERT_SEC", 30 if demo else 300),
-        clean_alert_sec=_num("CLEAN_ALERT_SEC", 20 if demo else 120),
+        wait_alert_sec=_num("WAIT_ALERT_SEC", 300),
+        clean_alert_sec=_num("CLEAN_ALERT_SEC", 120),
         occupy_confirm_sec=_num("OCCUPY_CONFIRM_SEC", 1.5),
         leave_confirm_sec=_num("LEAVE_CONFIRM_SEC", 3.0),
         waiter_visit_sec=_num("WAITER_VISIT_SEC", 1.0),
@@ -128,7 +123,6 @@ def load_settings() -> Settings:
         zones_file=Path(os.getenv("ZONES_FILE", str(ROOT / "config" / "zones.json"))),
         frontend_dist=Path(os.getenv("FRONTEND_DIST", str(ROOT.parent / "frontend" / "dist"))),
         timezone=os.getenv("RESTAURANT_TZ", "Asia/Qatar"),
-        seed_demo_data=_bool("SEED_DEMO_DATA", _src == "sim"),
         cors_origins=os.getenv("CORS_ORIGINS", "*").split(","),
         camera_offline_sec=_num("CAMERA_OFFLINE_SEC", 10),
         use_bytetrack=_bool("USE_BYTETRACK", False),

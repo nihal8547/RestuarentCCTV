@@ -39,8 +39,8 @@ def main() -> None:
     a = ap.parse_args()
 
     os.environ.update({"DB_PATH": str(Path(tempfile.mkdtemp()) / "an.db"), "ZONES_FILE": a.zones,
-                       "VIDEO_SOURCE": a.video, "DEMO_MODE": "1" if a.demo_thresholds else "0",
-                       "SEED_DEMO_DATA": "0", "AUTH_ENABLED": "0"})
+                       "VIDEO_SOURCE": a.video, **({"WAIT_ALERT_SEC": "30", "CLEAN_ALERT_SEC": "20"} if a.demo_thresholds else {}),
+                       "AUTH_ENABLED": "0"})
     from app.annotator import annotate
     from app.config import load_settings
     from app.db import Database

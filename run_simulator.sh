@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# One command demo: builds the dashboard, starts the backend in simulator mode.
+# One command run: builds the dashboard, starts the backend with the realistic restaurant simulator.
 set -e
 cd "$(dirname "$0")"
 python3 -m venv backend/venv 2>/dev/null || true

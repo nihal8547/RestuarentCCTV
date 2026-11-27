@@ -45,10 +45,9 @@ restaurant-ai/
 │   │   ├── pipeline.py        frame loop: detect → zones → state machine → DB → JPEG/snapshot
 │   │   ├── state_machine.py   per-table logic + alerts (pure, unit-tested)
 │   │   ├── detector.py        YOLOv8 wrapper + staff colour classifier
-│   │   ├── simulator.py       synthetic restaurant (demo mode, no camera needed)
+│   │   ├── simulator.py       realistic restaurant simulator (no camera needed)
 │   │   ├── annotator.py       draws boxes / labels / timers
 │   │   ├── analytics.py       weekly report queries
-│   │   ├── seed.py            7 days of demo history (is_demo=1)
 │   │   ├── db.py              SQLite layer
 │   │   └── config.py          env-driven settings
 │   ├── config/zones.json      table polygons, seats, sections
@@ -57,18 +56,18 @@ restaurant-ai/
 ├── frontend/                  Vite + React + Tailwind + Recharts
 │   └── src/components/        OccupancyHeader, LiveFeed, FloorPlan, AlertPanel, Analytics
 ├── deploy/                    Caddyfile (HTTPS + auth), systemd unit
-├── Dockerfile · docker-compose.yml · .env.example · run_demo.sh
+├── Dockerfile · docker-compose.yml · .env.example · run_simulator.sh
 ```
 
-## 3. Run the demo (simulator — no camera, no model)
+## 3. Run with the simulator (no camera, no model)
 
 Requirements: Python 3.10+, Node 18+.
 
 **One command (Linux/macOS):**
 ```bash
-./run_demo.sh            # then open http://localhost:8000
+./run_simulator.sh            # then open http://localhost:8000
 ```
-**Windows:** double-click `run_demo.bat`.
+**Windows:** double-click `run_simulator.bat`.
 
 **Manual / dev mode (hot reload):**
 ```bash
@@ -85,7 +84,7 @@ npm run dev                                           # http://localhost:5173
 ```
 
 The simulator seats guests, sends waiters, and deliberately makes some visits/cleanings late so both alert types fire.
-Demo thresholds are 30 s / 20 s (`DEMO_MODE=1`); production defaults are 5 min / 2 min.
+Thresholds are the real ones (5 min no waiter / 2 min uncleaned); the simulator runs at matching real-life pace. Shorten with `WAIT_ALERT_SEC` / `CLEAN_ALERT_SEC` or in Settings.
 
 Tests: `cd backend && python -m pytest -q` (37 tests: state machine, tracker, auth/roles, settings, zones, camera-offline, reports, hub)
 
@@ -102,7 +101,7 @@ First login when `ADMIN_PASSWORD` is set: user `ADMIN_USER` (default `manager`).
 5. Run:
    ```bash
    VIDEO_SOURCE="rtsp://user:pass@192.168.1.64:554/Streaming/Channels/102" \
-   DEMO_MODE=0 SEED_DEMO_DATA=0 ANCHOR=foot \
+   ANCHOR=foot \
    uvicorn app.main:app --host 0.0.0.0 --port 8000
    ```
    `ANCHOR=center` suits overhead cameras, `foot` suits angled cameras (uses the person's feet to decide which table they are at).
@@ -124,7 +123,7 @@ Camera placement tips: overhead or high-angle, tables not hidden behind pillars,
 ### A. On-premise at the restaurant (recommended)
 RTSP lives on the restaurant LAN, so run the CV there. A mini PC (Intel NUC / i5, 16 GB) handles 1–2 cameras at 5–10 fps with `yolov8n`. For more cameras use a small NVIDIA GPU or Jetson Orin.
 ```bash
-cp .env.example .env              # edit VIDEO_SOURCE, DEMO_MODE=0, SEED_DEMO_DATA=0
+cp .env.example .env              # edit VIDEO_SOURCE
 INSTALL_YOLO=1 docker compose up -d --build
 # dashboard: http://<mini-pc-ip>:8000  (open it on the manager's phone/tablet on the same Wi-Fi)
 ```
@@ -145,13 +144,13 @@ Enable the `caddy` service in `docker-compose.yml`, set your domain and a passwo
 |---|---|
 | **Login + roles** | `staff` (live ops, acknowledge alerts) < `manager` (+ analytics, reports, settings view) < `owner` (+ edit settings/zones, users, hub). Enable with `ADMIN_PASSWORD` (creates first owner). Users managed in **Settings → Users**. Passwords hashed with scrypt, signed 12 h tokens. |
 | **Multi-camera** | `CAMERAS='{"cam1":"rtsp://…","cam2":"rtsp://…"}'`. Each table zone is assigned to a camera (Settings → Table zones). One worker thread per camera; camera switcher on the live feed. |
-| **Camera-offline alert** | No frames for `CAMERA_OFFLINE_SEC` → critical alert (dashboard + phone push), tables of that camera turn grey, feed shows "CAMERA OFFLINE", auto-resolves on recovery. Demo: Settings → Cameras → *Simulate outage*. |
+| **Camera-offline alert** | No frames for `CAMERA_OFFLINE_SEC` → critical alert (dashboard + phone push), tables of that camera turn grey, feed shows "CAMERA OFFLINE", auto-resolves on recovery. |
 | **Person tracking** | Every person gets a stable `#id` (built-in IoU tracker). With YOLO you can switch to ultralytics ByteTrack: `USE_BYTETRACK=1`. |
 | **Settings UI** | Thresholds, report schedule, restaurant name editable at runtime (stored in SQLite, no restart). |
 | **Zone editor** | Settings → Table zones: draw/drag polygons on the live camera frame, set seats / section / camera, Save → applied instantly (persisted). |
 | **Weekly report** | PDF + text. Auto-sent every `REPORT_WEEKDAY` at `REPORT_HOUR` (restaurant time) to the webhook (PDF as base64) and Telegram (PDF attached). Manual: Analytics → *Download PDF* / *Send report now*. |
 | **Service performance** | Avg time to first waiter visit, table reset time, alert counts — by shift (lunch/evening/dinner), section and table. |
-| **Multi-restaurant hub** | Central server with `HUB_ENABLED=1` → **All Venues** tab. Each restaurant sets `HUB_URL` + `HUB_KEY` and pushes counts/alerts every 5 s (never video). Add venues in the UI to get their key. Demo data: `python backend/scripts/seed_demo_venues.py http://localhost:8000 <owner> <password>`. |
+| **Multi-restaurant hub** | Central server with `HUB_ENABLED=1` → **All Venues** tab. Each restaurant sets `HUB_URL` + `HUB_KEY` and pushes counts/alerts every 5 s (never video). Add venues in the UI to get their key. |
 | **Arabic + RTL** | EN/AR toggle in the header (remembered). Alert sentences are localised from structured data. *Have a native speaker review the Arabic copy before shipping to clients.* |
 | **Staff mobile PWA** | `/#/staff` — big **I'm on it** buttons (records who acknowledged), live table grid, beep + vibrate + system notification on new alerts. Installable via *Add to Home Screen* (works on HTTPS or localhost). |
 | **Staff alerts to phones** | `ALERT_WEBHOOK_URL` (n8n → WhatsApp/SMS/Slack) or `TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID`. |
@@ -177,7 +176,7 @@ The service report is per shift / section / table. Per-*person* metrics would ne
   dirty table (FREE -> NEEDS CLEANING) and a wiped one (-> FREE) after 3 s of stable detection. Optional; see `training/README.md`.
 * **Training toolkit** - `backend/scripts/extract_frames.py`, `auto_label.py`, `training/split_dataset.py`, `training/train.py`,
   `training/data.yaml` (classes: customer, staff, table_clean, table_dirty).
-* **Windows** - double-click `run_demo.bat` (needs Python 3.10+ and Node 18+).
+* **Windows** - double-click `run_simulator.bat` (needs Python 3.10+ and Node 18+).
 * **Tested with real YOLOv8n** on a video file (CPU, ~13 fps) - persons detected, zones mapped, annotated feed OK.
 
 ## 6d. How the AI tells things apart (and how to tune it)
@@ -211,7 +210,7 @@ The Studio header shows YOLO version, CPU/GPU and ms/frame per camera.
 ## 6f. Real restaurant video (no simulator)
 
 Upload an MP4 in **Settings -> Video source** (or `./run_real.sh clip.mp4`, or the offline `backend/scripts/analyze_video.py`) and
-the real YOLO AI runs on it. Real mode defaults: production thresholds (5 min / 2 min), no demo history, 960 px inference,
+the real YOLO AI runs on it. Real mode defaults: production thresholds (5 min / 2 min), no fake history, 960 px inference,
 staff colour cue OFF until you click a waiter's shirt (Settings -> Staff uniform colour). Step-by-step: [`docs/REAL_VIDEO_TEST.md`](docs/REAL_VIDEO_TEST.md).
 
 ## 7. API
@@ -220,7 +219,7 @@ staff colour cue OFF until you click a waiter's shirt (Settings -> Staff uniform
 |---|---|
 | `GET /video_feed` | MJPEG annotated stream |
 | `WS /ws` | live state JSON (2 Hz) |
-| `GET/POST /api/source` · `POST /api/source/upload` · `POST /api/data/purge-demo` (owner) | switch camera between simulator / video file / RTSP at runtime |
+| `GET/POST /api/source` · `POST /api/source/upload` | switch camera between simulator / video file / RTSP at runtime |
 | `/api/studio/*` (owner): `overview`, `upload`, `capture`, `images`, `labels/{name}`, `autolabel`, `export`, `train`, `models`, `models/activate`, `models/import` | Model Studio |
 | `POST /api/tables/{id}/reference` (manager) · `GET /api/calibrate/uniform` | clean-table reference photo, uniform colour calibration |
 | `POST /api/tables/{id}/action` (`mark_clean`, `waiter_visit`, `reserve`, `unreserve`) · `GET /api/tables/{id}` | manual override + table history (staff) |
@@ -236,4 +235,4 @@ staff colour cue OFF until you click a waiter's shirt (Settings -> Staff uniform
 
 ## 8. Key settings (`.env`)
 
-`VIDEO_SOURCE` · `DEMO_MODE` · `WAIT_ALERT_SEC` · `CLEAN_ALERT_SEC` · `OCCUPY_CONFIRM_SEC` · `LEAVE_CONFIRM_SEC` · `ANCHOR` · `YOLO_MODEL` · `YOLO_CONF` · `YOLO_DEVICE` · `STAFF_HSV_LOW/HIGH` · `RESTAURANT_TZ` · `SEED_DEMO_DATA`
+`VIDEO_SOURCE` · `WAIT_ALERT_SEC` · `CLEAN_ALERT_SEC` · `OCCUPY_CONFIRM_SEC` · `LEAVE_CONFIRM_SEC` · `ANCHOR` · `YOLO_MODEL` · `YOLO_CONF` · `YOLO_DEVICE` · `STAFF_HSV_LOW/HIGH` · `RESTAURANT_TZ` · `SEED_DEMO_DATA`

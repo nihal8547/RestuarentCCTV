@@ -23,7 +23,6 @@ from .db import Database
 from .hub import HubPusher, make_api_key
 from .pipeline import Pipeline
 from .reports import ReportScheduler, build_pdf, build_text
-from .seed import seed_history
 from .training import CLASSES, Studio
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -62,8 +61,7 @@ hub_pusher = HubPusher(settings, pipeline, lambda: make_report()["kpis"]) if set
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    if settings.seed_demo_data:
-        seed_history(db, settings.timezone, table_meta()[0])
+    db.purge_demo()          # remove any fake history left by older versions - analytics are real data only
     if auth.enabled and db.count_users() == 0:
         pw = secrets.token_urlsafe(9)
         db.create_user("admin", hash_password(pw), "owner", "Admin", time.time())
@@ -329,7 +327,7 @@ def report_send(user: dict = manager):
 def _settings_view() -> dict:
     s = settings
     return {
-        "restaurant_name": s.restaurant_name, "timezone": s.timezone, "demo_mode": s.demo_mode,
+        "restaurant_name": s.restaurant_name, "timezone": s.timezone,
         "wait_alert_sec": s.wait_alert_sec, "clean_alert_sec": s.clean_alert_sec,
         "occupy_confirm_sec": s.occupy_confirm_sec, "leave_confirm_sec": s.leave_confirm_sec,
         "waiter_visit_sec": s.waiter_visit_sec, "clean_confirm_sec": s.clean_confirm_sec,
@@ -415,14 +413,6 @@ def set_pw(user_id: int, body: dict = Body(...), user: dict = owner):
         raise HTTPException(422, "password must be >= 6 characters")
     db.set_password(user_id, hash_password(pw))
     return {"ok": True}
-
-
-# ------------------------------------------------------- simulator (demo only)
-@app.post("/api/sim/camera/{cam_id}")
-def sim_camera(cam_id: str, body: dict = Body(...), user: dict = owner):
-    if not pipeline.set_camera_offline(cam_id, bool(body.get("offline"))):
-        raise HTTPException(409, "only simulator cameras can be switched off")
-    return {"ok": True, "offline": bool(body.get("offline"))}
 
 
 # ------------------------------------------------------------------------- hub
@@ -533,10 +523,6 @@ async def source_upload(file: UploadFile = File(...), cam: str = Form(""), use_n
         pipeline.set_source(cam or pipeline.cam_ids[0], str(dest))
     return {"ok": True, "file": dest.name, "mode": pipeline.mode}
 
-
-@app.post("/api/data/purge-demo")
-def purge_demo(user: dict = owner):
-    return db.purge_demo()
 
 
 # ------------------------------------------------------------ model studio (owner only)

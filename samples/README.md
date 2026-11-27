@@ -2,8 +2,8 @@
 
 Drop test videos here (MP4/AVI) and run the app on them:
 
-    VIDEO_SOURCE=samples/lunch.mp4 DEMO_MODE=1 ./run_demo.sh      # Linux/macOS
-    set VIDEO_SOURCE=samples\lunch.mp4 && run_demo.bat              # Windows
+    VIDEO_SOURCE=samples/lunch.mp4 WAIT_ALERT_SEC=30 CLEAN_ALERT_SEC=20 ./run_simulator.sh      # Linux/macOS
+    set VIDEO_SOURCE=samples\lunch.mp4 && run_simulator.bat              # Windows
 
 Then open the Zone Editor (Settings tab) to draw the 6 table polygons on a frame of this video.
 Video files are git-ignored.
