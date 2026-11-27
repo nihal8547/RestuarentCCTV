@@ -53,12 +53,14 @@ class Notifier:
                 continue
             text = (f"{ICON.get(a['kind'], '⚠️')} ALERT · {self.restaurant}\n{a['message']}"
                     if event == "alert" else f"✅ Resolved · {a['table']} ({a['kind']})")
+            # each channel on its own thread: a slow webhook must never delay Telegram or the next alert
             if self.webhook:
-                self._post(self.webhook, {"event": event, "restaurant": self.restaurant,
-                                          "text": text, **a})
+                threading.Thread(target=self._post, daemon=True, args=(
+                    self.webhook, {"event": event, "restaurant": self.restaurant, "text": text, **a})).start()
             if self.tg_token and self.tg_chat and event == "alert":
-                self._post(f"https://api.telegram.org/bot{self.tg_token}/sendMessage",
-                           {"chat_id": self.tg_chat, "text": text})
+                threading.Thread(target=self._post, daemon=True, args=(
+                    f"https://api.telegram.org/bot{self.tg_token}/sendMessage",
+                    {"chat_id": self.tg_chat, "text": text})).start()
 
     def send_report(self, text: str, pdf: bytes | None, filename: str) -> bool:
         """Queue the weekly report. Returns False when no channel is configured."""
@@ -91,9 +93,11 @@ class Notifier:
 
     @staticmethod
     def _post(url: str, payload: dict) -> None:
-        try:
-            req = urllib.request.Request(url, data=json.dumps(payload).encode(),
-                                         headers={"Content-Type": "application/json"}, method="POST")
-            urllib.request.urlopen(req, timeout=8).read()
-        except Exception as e:  # never let a failed push break the pipeline
-            log.warning("notification failed: %s", urllib.parse.urlparse(url).netloc or e)
+        for attempt in (1, 2):                      # one quick retry, short timeout -> alert reaches phones within seconds
+            try:
+                req = urllib.request.Request(url, data=json.dumps(payload).encode(),
+                                             headers={"Content-Type": "application/json"}, method="POST")
+                urllib.request.urlopen(req, timeout=4).read()
+                return
+            except Exception as e:  # never let a failed push break the pipeline
+                log.warning("notification failed (try %d): %s", attempt, urllib.parse.urlparse(url).netloc or e)

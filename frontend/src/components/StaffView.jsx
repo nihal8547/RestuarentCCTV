@@ -6,52 +6,10 @@ import { ALERT_STYLE, ago, alertText } from '../alertText.js'
 
 const DOT = { FREE: 'bg-emerald-500', OCCUPIED: 'bg-red-500', NEEDS_CLEANING: 'bg-amber-400' }
 
-function beep() {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)()
-    const o = ctx.createOscillator()
-    const g = ctx.createGain()
-    o.connect(g)
-    g.connect(ctx.destination)
-    o.frequency.value = 880
-    g.gain.value = 0.15
-    o.start()
-    setTimeout(() => {
-      o.frequency.value = 660
-    }, 150)
-    setTimeout(() => {
-      o.stop()
-      ctx.close()
-    }, 320)
-  } catch {
-    /* audio not available */
-  }
-}
-
-/** Beep + vibrate + system notification for each NEW active alert. */
-function useAlertNotifier(alerts, enabled, t) {
-  const seen = useRef(null)
-  useEffect(() => {
-    const ids = new Set(alerts.map((a) => a.id))
-    if (seen.current === null) {
-      seen.current = ids
-      return
-    }
-    const fresh = alerts.filter((a) => !a.resolved && !seen.current.has(a.id))
-    seen.current = ids
-    if (!fresh.length || !enabled) return
-    beep()
-    navigator.vibrate?.([200, 100, 200])
-    if ('Notification' in window && Notification.permission === 'granted') {
-      fresh.forEach((a) => new Notification(t(`alerts.${a.kind}`), { body: alertText(a, t), tag: `alert-${a.id}` }))
-    }
-  }, [alerts, enabled, t])
-}
-
-export default function StaffView({ state }) {
+export default function StaffView({ state, alertsOn, onEnable }) {
   const { t } = useI18n()
   const { user } = useAuth()
-  const [enabled, setEnabled] = useState(() => 'Notification' in window && Notification.permission === 'granted')
+  const enabled = alertsOn
   const [now, setNow] = useState(Date.now() / 1000)
   const [mine, setMine] = useState({})
   useEffect(() => {
@@ -60,14 +18,9 @@ export default function StaffView({ state }) {
   }, [])
 
   const alerts = state?.alerts || []
-  useAlertNotifier(alerts, enabled, t)
 
   const active = alerts.filter((a) => !a.resolved)
-  const enable = async () => {
-    if ('Notification' in window) await Notification.requestPermission()
-    setEnabled(true)
-    beep()
-  }
+  const enable = onEnable
   const onIt = async (a) => {
     setMine((m) => ({ ...m, [a.id]: user?.name }))
     try {

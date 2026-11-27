@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import useLiveState from './hooks/useLiveState.js'
+import useAlertNotifier from './hooks/useAlertNotifier.js'
 import { AuthProvider, useAuth } from './AuthContext.jsx'
 import { I18nProvider, useI18n } from './i18n.jsx'
 import OccupancyHeader from './components/OccupancyHeader.jsx'
@@ -18,6 +19,7 @@ function Main() {
   const { t, lang, setLang } = useI18n()
   const { state, connected } = useLiveState(true)
   const [clock, setClock] = useState(new Date())
+  const alertSig = useAlertNotifier(state?.alerts, t)
   const tabs = [
     ['live', 'tab.live', can('staff')],
     ['analytics', 'tab.analytics', can('manager')],
@@ -74,6 +76,11 @@ function Main() {
             <span className={`h-2 w-2 rounded-full ${connected ? 'bg-emerald-400' : 'bg-red-400 pulse-soft'}`} />
             {connected ? t('hdr.live') : t('hdr.reconnecting')}
           </span>
+          <button onClick={alertSig.enabled ? alertSig.disable : alertSig.enable}
+            className={`rounded-md px-2.5 py-1 ${alertSig.enabled ? 'bg-emerald-500/15 text-emerald-300' : 'bg-sky-600 text-white hover:bg-sky-500'}`}
+            title={t('staff.enable')}>
+            {alertSig.enabled ? '🔔' : '🔕'}
+          </button>
           <button onClick={() => setLang(lang === 'en' ? 'ar' : 'en')} className="rounded-md bg-slate-800 px-2.5 py-1 hover:bg-slate-700">
             {lang === 'en' ? 'العربية' : 'English'}
           </button>
@@ -103,7 +110,7 @@ function Main() {
       {tab === 'settings' && <Settings />}
       {tab === 'studio' && <Studio />}
       {tab === 'venues' && <Venues />}
-      {tab === 'staff' && <StaffView state={state} />}
+      {tab === 'staff' && <StaffView state={state} alertsOn={alertSig.enabled} onEnable={alertSig.enable} />}
     </div>
   )
 }
