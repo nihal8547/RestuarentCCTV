@@ -4,6 +4,7 @@ import { useAuth } from '../AuthContext.jsx'
 import { useI18n } from '../i18n.jsx'
 import VideoSource from './VideoSource.jsx'
 import ZoneEditor from './ZoneEditor.jsx'
+import { Icon } from './Sidebar.jsx'
 
 function Section({ title, children }) {
   return (
@@ -51,6 +52,8 @@ export default function Settings() {
   }, [])
 
   const [form, setForm] = useState(null)
+  const [sec, setSec] = useState(() => { try { return localStorage.getItem('set_sec') || 'general' } catch { return 'general' } })
+  const pick = (id) => { setSec(id); try { localStorage.setItem('set_sec', id) } catch { /* ignore */ } }
   useEffect(() => {
     if (s && !form) setForm(s)
   }, [s, form])
@@ -96,14 +99,34 @@ export default function Settings() {
     </Field>
   )
 
-  return (
-    <div className="space-y-4">
-      <div>
-        <h2 className="text-xs font-semibold tracking-[0.3em] text-slate-500">{t('set.title')}</h2>
-        {!isOwner && <p className="mt-1 text-xs text-amber-300">{t('set.readonly')}</p>}
-      </div>
+  const keys = ['restaurant_name', 'wait_alert_sec', 'clean_alert_sec', 'occupy_confirm_sec', 'leave_confirm_sec', 'waiter_visit_sec', 'clean_confirm_sec', 'camera_offline_sec', 'report_enabled', 'report_weekday', 'report_hour']
+  const dirty = isOwner && keys.some((k) => String(form[k]) !== String(s[k]))
+  const groups = [
+    ['general', 'set.sec.general', 'settings', true],
+    ['alerts', 'set.sec.alerts', 'live', true],
+    ['cameras', 'set.sec.cameras', 'studio', true],
+    ['zones', 'set.sec.zones', 'venues', isOwner],
+    ['users', 'set.sec.users', 'staff', isOwner],
+    ['system', 'set.sec.system', 'analytics', true],
+  ].filter((g) => g[3])
+  const cur = groups.some((g) => g[0] === sec) ? sec : 'general'
 
-      <div className="grid gap-4 lg:grid-cols-2">
+  return (
+    <div className="gap-6 md:flex">
+      <nav className="mb-4 flex shrink-0 gap-1 overflow-x-auto whitespace-nowrap md:mb-0 md:sticky md:top-4 md:w-52 md:flex-col md:self-start" aria-label="Settings sections">
+        {groups.map(([id, key, icon]) => (
+          <button key={id} onClick={() => pick(id)} aria-current={cur === id ? 'page' : undefined}
+            className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-start text-sm font-medium transition ${cur === id ? 'bg-slate-800 text-slate-100' : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'}`}>
+            <Icon id={icon} className="h-4 w-4" />{t(key)}
+          </button>
+        ))}
+      </nav>
+
+      <div className="min-w-0 flex-1 space-y-4 pb-20">
+        {!isOwner && <p className="text-xs text-amber-300">{t('set.readonly')}</p>}
+
+        {cur === 'general' && (
+          <>
         <Section title={t('set.general')}>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="sm:col-span-2">
@@ -119,15 +142,12 @@ export default function Settings() {
             {num('clean_confirm_sec', t('set.cleanConfirm'), null, 0.5)}
             {num('camera_offline_sec', t('set.camOffline'))}
           </div>
-          {isOwner && (
-            <div className="mt-4 flex items-center gap-3">
-              <button onClick={save} className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold hover:bg-sky-500">{t('set.save')}</button>
-              {saved && <span className="text-xs text-slate-300">{saved}</span>}
-            </div>
-          )}
         </Section>
+          </>
+        )}
 
-        <div className="space-y-4">
+        {cur === 'alerts' && (
+          <>
           <Section title={t('set.report')}>
             <label className="mb-3 flex items-center gap-2 text-sm">
               <input type="checkbox" disabled={!isOwner} checked={!!form.report_enabled} onChange={(e) => set('report_enabled', e.target.checked)} />
@@ -153,6 +173,11 @@ export default function Settings() {
             <p className="mt-3 text-[11px] text-slate-500">{t('set.notifHelp')}</p>
           </Section>
 
+          </>
+        )}
+
+        {cur === 'cameras' && (
+          <>
           <Section title={t('set.cameras')}>
             <ul className="space-y-2 text-sm">
               {s.cameras.map((c) => (
@@ -174,22 +199,28 @@ export default function Settings() {
             </ul>
             {s.cameras.some((c) => c.sim) && <p className="mt-2 text-[11px] text-slate-500">{t('set.simHelp')}</p>}
           </Section>
-        </div>
-      </div>
-
-      {isOwner && (
+            {isOwner && (
         <Section title="Video source - real video / live CCTV">
           <VideoSource />
         </Section>
       )}
 
-      {isOwner && (
+            )}
+          </>
+        )}
+
+        {cur === 'zones' && isOwner && (
+          <>
         <Section title={t('set.zones')}>
           <ZoneEditor cameras={s.cameras} />
         </Section>
       )}
 
-      {isOwner && (
+          </>
+        )}
+
+        {cur === 'users' && isOwner && (
+          <>
         <Section title={t('set.users')}>
           <table className="mb-4 w-full text-sm">
             <tbody>
@@ -220,11 +251,30 @@ export default function Settings() {
         </Section>
       )}
 
+          </>
+        )}
+
+        {cur === 'system' && (
+          <>
       <Section title={t('set.hubInfo')}>
         <p className="text-sm text-slate-300">
           {s.hub.enabled ? t('set.hubOn') : s.hub.pushing_to ? t('set.hubPush', { u: s.hub.pushing_to }) : t('set.hubOff')}
         </p>
       </Section>
+          </>
+        )}
+      </div>
+
+      {dirty && (
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-700 bg-slate-900 px-4 py-3 lg:start-64">
+          <div className="mx-auto flex max-w-[1400px] items-center justify-end gap-3">
+            <span className="me-auto text-xs text-amber-300">● {t('set.unsaved')}</span>
+            {saved && <span className="text-xs text-slate-300">{saved}</span>}
+            <button onClick={() => setForm(s)} className="rounded-lg bg-slate-800 px-4 py-2 text-sm hover:bg-slate-700">{t('set.discard')}</button>
+            <button onClick={save} className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-500">{t('set.save')}</button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

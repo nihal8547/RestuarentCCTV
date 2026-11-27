@@ -12,6 +12,7 @@ import Settings from './components/Settings.jsx'
 import Studio from './components/Studio.jsx'
 import Venues from './components/Venues.jsx'
 import StaffView from './components/StaffView.jsx'
+import Sidebar from './components/Sidebar.jsx'
 import AlertBanner from './components/AlertBanner.jsx'
 import Login from './components/Login.jsx'
 
@@ -54,56 +55,66 @@ function Main() {
   const th = state?.thresholds
   const name = state?.restaurant_name || config?.restaurant_name
 
+  const [menu, setMenu] = useState(false)
+  const activeAlerts = (state?.alerts || []).filter((a) => !a.resolved).length
+  const title = t(tabs.find((x) => x[0] === tab)?.[1] || 'tab.live')
+
+  const sideTools = (
+    <>
+      <div className="grid grid-cols-3 gap-2">
+        <button onClick={toggleTheme} className="rounded-md bg-slate-800 px-2 py-2 hover:bg-slate-700"
+          title={theme === 'light' ? 'Black theme' : 'White theme'} aria-label={theme === 'light' ? 'Black theme' : 'White theme'}>
+          {theme === 'light' ? '🌙' : '☀️'}
+        </button>
+        <button onClick={alertSig.enabled ? alertSig.disable : alertSig.enable}
+          className={`rounded-md px-2 py-2 ${alertSig.enabled ? 'bg-emerald-500/15 text-emerald-300' : 'bg-sky-600 text-white hover:bg-sky-500'}`}
+          title={t('staff.enable')} aria-label={t('staff.enable')}>
+          {alertSig.enabled ? '🔔' : '🔕'}
+        </button>
+        <button onClick={() => setLang(lang === 'en' ? 'ar' : 'en')} className="rounded-md bg-slate-800 px-2 py-2 hover:bg-slate-700">
+          {lang === 'en' ? 'ع' : 'EN'}
+        </button>
+      </div>
+      {config?.auth_required && (
+        <button onClick={logout} className="flex w-full items-center justify-between rounded-md bg-slate-800 px-3 py-2 hover:bg-slate-700" title={user.username}>
+          <span className="truncate">{user.name} · {t(`role.${user.role}`)}</span>
+          <span>⎋</span>
+        </button>
+      )}
+    </>
+  )
+
   return (
-    <div className="mx-auto max-w-[1500px] px-4 py-4 sm:px-6">
-      <header className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-lg font-bold tracking-tight">{name ? `${name} · ` : ''}{t('app.title')}</h1>
-          <p className="text-xs text-slate-500">{t('app.sub')}</p>
-        </div>
+    <div className="lg:flex">
+      <Sidebar tabs={tabs} tab={tab} onGo={go} name={name} open={menu} onClose={() => setMenu(false)} alertCount={activeAlerts}>
+        {sideTools}
+      </Sidebar>
 
-        <nav className="flex max-w-full overflow-x-auto whitespace-nowrap rounded-lg border border-slate-800 bg-slate-900 p-1 text-sm">
-          {tabs.map(([id, key]) => (
-            <button
-              key={id}
-              onClick={() => go(id)}
-              className={`rounded-md px-3.5 py-1.5 font-medium transition ${tab === id ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-slate-200'}`}
-            >
-              {t(key)}
-            </button>
-          ))}
-        </nav>
-
-        <div className="flex flex-wrap items-center gap-2.5 text-xs text-slate-400">
-          {th?.demo && (
-            <span className="hidden rounded-full bg-violet-500/15 px-2.5 py-1 text-violet-300 sm:inline" title="Alert thresholds shortened for the demo">
-              {t('hdr.demo', { w: th.wait_alert_sec, c: th.clean_alert_sec })}
-            </span>
-          )}
-          <span className="hidden tabular-nums sm:inline" dir="ltr">{clock.toLocaleTimeString()}</span>
-          <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 ${connected ? 'bg-emerald-500/15 text-emerald-300' : 'bg-red-500/15 text-red-300'}`}>
-            <span className={`h-2 w-2 rounded-full ${connected ? 'bg-emerald-400' : 'bg-red-400 pulse-soft'}`} />
-            {connected ? t('hdr.live') : t('hdr.reconnecting')}
-          </span>
-          <button onClick={toggleTheme} className="rounded-md bg-slate-800 px-2.5 py-1 hover:bg-slate-700"
-            title={theme === 'light' ? 'Black theme' : 'White theme'} aria-label={theme === 'light' ? 'Black theme' : 'White theme'}>
-            {theme === 'light' ? '🌙' : '☀️'}
-          </button>
-          <button onClick={alertSig.enabled ? alertSig.disable : alertSig.enable}
-            className={`rounded-md px-2.5 py-1 ${alertSig.enabled ? 'bg-emerald-500/15 text-emerald-300' : 'bg-sky-600 text-white hover:bg-sky-500'}`}
-            title={t('staff.enable')} aria-label={t('staff.enable')}>
-            {alertSig.enabled ? '🔔' : '🔕'}
-          </button>
-          <button onClick={() => setLang(lang === 'en' ? 'ar' : 'en')} className="rounded-md bg-slate-800 px-2.5 py-1 hover:bg-slate-700">
-            {lang === 'en' ? 'العربية' : 'English'}
-          </button>
-          {config?.auth_required && (
-            <button onClick={logout} className="rounded-md bg-slate-800 px-2.5 py-1 hover:bg-slate-700" title={user.username}>
-              {user.name} · {t(`role.${user.role}`)} ⎋
-            </button>
-          )}
-        </div>
-      </header>
+      <main className="min-w-0 flex-1 px-4 py-4 sm:px-6">
+        <div className="mx-auto max-w-[1400px]">
+          <header className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <button onClick={() => setMenu(true)} className="rounded-md bg-slate-800 p-2 hover:bg-slate-700 lg:hidden" aria-label="Menu">
+                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
+              </button>
+              <div>
+                <h1 className="text-lg font-bold tracking-tight">{title}</h1>
+                <p className="hidden text-xs text-slate-500 sm:block">{t('app.sub')}</p>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2.5 text-xs text-slate-400">
+              {th?.demo && (
+                <span className="hidden rounded-full bg-violet-500/15 px-2.5 py-1 text-violet-300 sm:inline" title="Alert thresholds shortened for the demo">
+                  {t('hdr.demo', { w: th.wait_alert_sec, c: th.clean_alert_sec })}
+                </span>
+              )}
+              <span className="hidden tabular-nums sm:inline" dir="ltr">{clock.toLocaleTimeString()}</span>
+              <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 ${connected ? 'bg-emerald-500/15 text-emerald-300' : 'bg-red-500/15 text-red-300'}`}>
+                <span className={`h-2 w-2 rounded-full ${connected ? 'bg-emerald-400' : 'bg-red-400 pulse-soft'}`} />
+                {connected ? t('hdr.live') : t('hdr.reconnecting')}
+              </span>
+            </div>
+          </header>
 
       {tab !== 'staff' && <AlertBanner alerts={state?.alerts} onView={() => go('live')} />}
 
@@ -123,6 +134,8 @@ function Main() {
       {tab === 'studio' && <Studio />}
       {tab === 'venues' && <Venues />}
       {tab === 'staff' && <StaffView state={state} alertsOn={alertSig.enabled} onEnable={alertSig.enable} />}
+        </div>
+      </main>
     </div>
   )
 }
