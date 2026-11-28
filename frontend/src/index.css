@@ -74,3 +74,24 @@ html.light svg text[fill="#38bdf8"] { fill: #0369a1; }
 html.light svg text[fill="#a78bfa"] { fill: #6d28d9; }
 html.light svg text[fill="#f472b6"] { fill: #be185d; }
 html.light [style*="#0f172a" i], html.light [style*="rgb(15, 23, 42)"] { background: #ececef !important; }
+
+/* ===== Strict black & white chrome: brand/accent colours become neutral. Only status colours (free/occupied/alerts) stay. ===== */
+.bg-sky-600, .bg-sky-500, .bg-sky-700 { background-color: #fafafa; color: #09090b !important; }
+.hover\:bg-sky-500:hover { background-color: #d4d4d8; }
+.text-sky-300, .text-violet-300, .text-fuchsia-300 { color: #d4d4d8; }
+.bg-sky-500\/15, .bg-sky-500\/20, .bg-fuchsia-500\/5, .bg-fuchsia-500\/20 { background-color: rgba(255,255,255,.08); }
+.border-sky-500, .border-sky-500\/40, .border-fuchsia-500\/40 { border-color: #a1a1aa; }
+html:not(.light) .bg-emerald-500\/15 { background-color: rgba(255,255,255,.08); }
+html:not(.light) .bg-red-500\/15 { background-color: rgba(255,255,255,.08); }
+
+html.light .bg-sky-600, html.light .bg-sky-500, html.light .bg-sky-700 { background-color: #09090b; color: #fff !important; }
+html.light .hover\:bg-sky-500:hover { background-color: #3f3f46; }
+html.light .text-sky-300, html.light .text-violet-300, html.light .text-fuchsia-300 { color: #3f3f46; }
+html.light .bg-sky-500\/15, html.light .bg-sky-500\/20, html.light .bg-fuchsia-500\/5, html.light .bg-fuchsia-500\/20 { background-color: rgba(0,0,0,.06); }
+html.light .border-sky-500, html.light .border-sky-500\/40, html.light .border-fuchsia-500\/40 { border-color: #52525b; }
+html.light .bg-emerald-500\/15, html.light .bg-red-500\/15 { background-color: rgba(0,0,0,.06); }
+html.light svg text[fill="#d4d4d8"] { fill: #27272a; }
+html.light svg text[fill="#a1a1aa"] { fill: #3f3f46; }
+html.light svg text[fill="#71717a"] { fill: #52525b; }
+html.light svg rect[fill="#d4d4d8"], html.light svg rect[fill="#a1a1aa"], html.light svg rect[fill="#71717a"] { fill: #52525b; }
+html.light [style*="rgb(212, 212, 216)"], html.light [style*="rgb(161, 161, 170)"], html.light [style*="rgb(113, 113, 122)"] { color: #27272a !important; }

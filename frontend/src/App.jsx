@@ -105,7 +105,7 @@ function Main() {
             </div>
             <div className="flex flex-wrap items-center gap-2.5 text-xs text-slate-400">
               <span className="hidden tabular-nums sm:inline" dir="ltr">{clock.toLocaleTimeString()}</span>
-              <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 ${connected ? 'bg-emerald-500/15 text-emerald-300' : 'bg-red-500/15 text-red-300'}`}>
+              <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 bg-slate-800 ${connected ? "text-slate-200" : "text-red-300"}`}>
                 <span className={`h-2 w-2 rounded-full ${connected ? 'bg-emerald-400' : 'bg-red-400 pulse-soft'}`} />
                 {connected ? t('hdr.live') : t('hdr.reconnecting')}
               </span>

@@ -8,7 +8,7 @@ const COLORS = {
   NEEDS_CLEANING: { fill: '#3a2504', stroke: '#fbbf24', text: '#fcd34d', chair: '#fbbf24' },
 }
 const SEAT = [[-55, -48], [55, -48], [-55, 48], [55, 48]]
-const SEC_TINT = { A: '#38bdf8', B: '#a78bfa', C: '#f472b6' }
+const SEC_TINT = { A: '#d4d4d8', B: '#a1a1aa', C: '#71717a' }   // greyscale sections
 
 function Table({ t, tr, onPick }) {
   const c = t.camera_online === false ? { fill: '#1e293b', stroke: '#64748b', text: '#94a3b8', chair: '#64748b' } : COLORS[t.state]
