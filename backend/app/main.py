@@ -648,10 +648,15 @@ def studio_models(user: dict = owner):
     return studio.models()
 
 
+@app.get("/api/studio/check")
+def studio_check(user: dict = owner):
+    return studio.dataset_check()
+
+
 @app.post("/api/studio/models/activate")
 def studio_activate(body: dict = Body(...), user: dict = owner):
     try:
-        return studio.activate(body.get("name"))
+        return studio.activate(body.get("name"), bool(body.get("force")))
     except ValueError as e:
         raise HTTPException(400, str(e))
 

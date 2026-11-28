@@ -36,6 +36,8 @@ def main() -> None:
     ap.add_argument("--max-seconds", type=float, default=0, help="stop after this much video time (0 = whole video)")
     ap.add_argument("--demo-thresholds", action="store_true", help="30s/20s alerts instead of 300s/120s")
     ap.add_argument("--no-video", action="store_true")
+    ap.add_argument("--truth", help="ground-truth CSV (start_sec,end_sec,table,state,guests) -> accuracy report")
+    ap.add_argument("--grace", type=float, default=10.0, help="seconds around a truth change that are not scored")
     a = ap.parse_args()
 
     os.environ.update({"DB_PATH": str(Path(tempfile.mkdtemp()) / "an.db"), "ZONES_FILE": a.zones,
@@ -73,6 +75,7 @@ def main() -> None:
     staff_tracks: set[int] = set()
     cust_tracks: set[int] = set()
     timeline = []
+    samples = []
     started, i, last_now = time.time(), 0, t0
     while True:
         ok, frame = cap.read()
@@ -105,6 +108,7 @@ def main() -> None:
                     staff_tracks.add(d.track_id)
                 elif d.track_id is not None:
                     cust_tracks.add(d.track_id)
+        samples.append((vt, {t["id"]: (t["state"], t["guests"]) for t in snap["tables"]}))
         if frames % 10 == 0:
             timeline.append({"t": round(vt, 1), **{t["id"]: t["state"] for t in snap["tables"]}})
         frames += 1
@@ -132,6 +136,11 @@ def main() -> None:
         "alerts": [{"kind": x["kind"], "table": x["table_id"], "message": x["message"]} for x in alerts],
         "timeline_sample": timeline[:200],
     }
+    acc_text = ""
+    if a.truth:
+        from app.evaluation import evaluate, format_report, load_truth
+        summary["accuracy"] = evaluate(samples, load_truth(a.truth), a.grace)
+        acc_text = format_report(summary["accuracy"])
     (out / "summary.json").write_text(json.dumps(summary, indent=2))
     lines = [f"Video: {a.video} ({summary['video_seconds']} s analysed in {summary['wall_seconds']} s, "
              f"{summary['analysis_fps']} fps)",
@@ -139,6 +148,8 @@ def main() -> None:
              "Per table:"]
     lines += [f"  {tid}: occupied {v['occupied_seconds']} s, max guests {v['max_guests']}" for tid, v in summary["tables"].items()]
     lines += [f"Events: {dict(ev_count)}", f"Alerts: {len(alerts)}"] + [f"  - {x['message']}" for x in alerts[:15]]
+    if acc_text:
+        lines += ["", acc_text]
     (out / "summary.txt").write_text("\n".join(lines))
     print("\n" + "\n".join(lines))
     print(f"\nWrote {out}/summary.json, summary.txt" + ("" if a.no_video else ", annotated.mp4"))

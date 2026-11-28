@@ -27,6 +27,16 @@ def main() -> None:
             per[names[int(ci)]] = round(float(m.box.ap50[i]), 3)
     except Exception:
         pass
+    best_conf = best_f1 = None
+    prec, rec = {}, {}
+    try:                                   # confidence that maximises F1 on the held-out set (used as the live threshold)
+        f1 = m.box.f1_curve.mean(0)
+        k = int(f1.argmax())
+        best_conf, best_f1 = round(float(m.box.px[k]), 3), round(float(f1[k]), 3)
+        for i, ci in enumerate(m.box.ap_class_index):
+            prec[names[int(ci)]], rec[names[int(ci)]] = round(float(m.box.p[i]), 3), round(float(m.box.r[i]), 3)
+    except Exception:
+        pass
     d = root / "models" / name
     d.mkdir(parents=True, exist_ok=True)
     shutil.copy2(best, d / "best.pt")
@@ -34,6 +44,7 @@ def main() -> None:
         "source": "trained", "created": time.time(), "base": cfg["base"], "epochs": cfg["epochs"],
         "imgsz": cfg["imgsz"], "n_train": cfg["n_train"], "n_val": cfg["n_val"], "labeled": cfg["labeled"],
         "boxes": cfg["boxes"], "classes": [n.lower() for n in names], "usable": True,
+        "best_conf": best_conf, "best_f1": best_f1, "per_class_precision": prec, "per_class_recall": rec,
         "map50": round(float(m.box.map50), 4), "map5095": round(float(m.box.map), 4), "per_class_ap50": per}))
     print("TRAINING COMPLETE", name)
 

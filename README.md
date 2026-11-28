@@ -213,6 +213,16 @@ Upload an MP4 in **Settings -> Video source** (or `./run_real.sh clip.mp4`, or t
 the real YOLO AI runs on it. Real mode defaults: production thresholds (5 min / 2 min), no fake history, 960 px inference,
 staff colour cue OFF until you click a waiter's shirt (Settings -> Staff uniform colour). Step-by-step: [`docs/REAL_VIDEO_TEST.md`](docs/REAL_VIDEO_TEST.md).
 
+### 6g. Accuracy & validation
+
+* **Dataset check** (Model Studio → Train): blocks training on unusable data (too few images, invalid boxes, no customer boxes) and warns about no `staff` labels, a single scene, class imbalance, tiny boxes.
+* **Honest score:** consecutive video frames are near-identical, so a random split inflates mAP. The validation set is made of whole held-out time blocks per video.
+* **Live threshold:** after training, the confidence that maximises F1 on the held-out set is stored with the model and used automatically for that model (per-class precision/recall are shown in the Models tab).
+* **Regression guard:** activating a model that validates worse than the active one (or mAP50 < 0.2) asks for explicit confirmation.
+* **Score the whole system against what a human saw:**
+  `python backend/scripts/analyze_video.py clip.mp4 --truth truth.csv` with
+  `start_sec,end_sec,table,state,guests` rows (state = FREE / OCCUPIED / NEEDS_CLEANING) → state accuracy, per-state precision/recall, guest-count error, seat-detect delay, missed parties. Label 5-10 tables over a few minutes of footage; do this per restaurant before go-live.
+
 ## 7. API
 
 | Endpoint | Purpose |

@@ -18,6 +18,7 @@ import numpy as np
 
 from .annotator import annotate
 from .config import Settings
+from .training import studio_root
 from .db import Database
 from .detector import Detection, YoloDetector
 from .notifier import Notifier
@@ -122,7 +123,7 @@ class CameraWorker(threading.Thread):
     def _make_detector(self) -> YoloDetector:
         s = self.pipe.s
         lo, hi = self.pipe.uniform()
-        return YoloDetector(self.pipe.model_path(), s.yolo_conf, s.yolo_imgsz, s.yolo_device,
+        return YoloDetector(self.pipe.model_path(), self.pipe.model_conf(), s.yolo_imgsz, s.yolo_device,
                             lo, hi, s.staff_pixel_ratio, s.use_bytetrack)
 
     def run(self) -> None:
@@ -340,6 +341,20 @@ class Pipeline(threading.Thread):
     def set_uniform(self, low, high) -> None:
         self.db.set_setting("uniform_hsv", {"low": list(low), "high": list(high)} if low else None)
         self.uniform_gen += 1
+
+    def model_conf(self) -> float:
+        """Detection threshold: the F1-optimal value measured on validation data for the active trained model."""
+        name = self.db.get_settings().get("active_model")
+        if name:
+            try:
+                f = studio_root(self.s) / "models" / Path(name).name / "meta.json"
+                meta = json.loads(f.read_text())
+                bc = meta.get("best_conf")
+                if bc and (meta.get("best_f1") or 0) >= 0.3:        # ignore the threshold of a model that barely learned
+                    return min(0.6, max(0.2, float(bc)))
+            except Exception:
+                pass
+        return self.s.yolo_conf
 
     def model_path(self) -> str:
         return active_model_path(self.s, self.db)

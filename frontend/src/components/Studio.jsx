@@ -274,6 +274,8 @@ function Train({ ov }) {
   const [tr, setTr] = useState(null)
   const [form, setForm] = useState({ name: '', base: 'yolov8n.pt', epochs: 60, imgsz: 960, batch: 8, device: '' })
   const [err, setErr] = useState('')
+  const [chk, setChk] = useState(null)
+  useEffect(() => { api('/api/studio/check').then(setChk).catch(() => {}) }, [ov.stats.labeled])
   const load = useCallback(() => api('/api/studio/train').then(setTr).catch(() => {}), [])
   useEffect(() => { load(); const t = setInterval(load, 3000); return () => clearInterval(t) }, [load])
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.type === 'number' ? +e.target.value : e.target.value })
@@ -288,9 +290,17 @@ function Train({ ov }) {
       <div className={card}>
         <h3 className="font-bold">Train a model</h3>
         <p className="mt-1 text-xs text-slate-400">
-          Uses all labelled images ({ov.stats.labeled}). 80% train / 20% validation. Training runs in the background; you can close this page.
+          Uses all labelled images ({ov.stats.labeled}). 80% train / 20% validation (whole time blocks are held out, so the accuracy score is honest). Training runs in the background; you can close this page.
           {ov.yolo.cuda ? ` GPU: ${ov.yolo.device_name}` : ' No GPU on this server - CPU training is slow; prefer exporting the dataset and training on a GPU PC / Colab, then import the .pt in the Models tab.'}
         </p>
+        {chk && (chk.errors.length > 0 || chk.warnings.length > 0) && (
+          <div className="mt-3 space-y-1 rounded-lg border border-slate-700 p-3 text-xs">
+            <p className="font-semibold">Dataset check</p>
+            {chk.errors.map((e) => <p key={e} className="text-red-300"><Icon id="x" className="me-1 h-3.5 w-3.5" />{e}</p>)}
+            {chk.warnings.map((w) => <p key={w} className="text-amber-300"><Icon id="warn" className="me-1 h-3.5 w-3.5" />{w}</p>)}
+          </div>
+        )}
+        {chk && chk.ok && chk.warnings.length === 0 && <p className="mt-3 text-xs text-emerald-300"><Icon id="check" className="me-1 h-3.5 w-3.5" />Dataset check passed: {chk.stats.boxes} boxes in {chk.stats.labeled} images.</p>}
         <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
           <label className="col-span-2 text-xs">Model name (optional)<input className={inp + ' mt-1 w-full'} value={form.name} onChange={set('name')} placeholder="auto: model-YYYYMMDD-HHMM" /></label>
           <label className="text-xs">Base model
@@ -303,7 +313,7 @@ function Train({ ov }) {
           <label className="text-xs">Device<select className={inp + ' mt-1 w-full'} value={form.device} onChange={set('device')}><option value="">auto</option><option value="cpu">cpu</option><option value="0">GPU 0</option></select></label>
         </div>
         <div className="mt-3 flex gap-2">
-          <button className={btn} disabled={running || !ov.yolo.installed} onClick={start}>Start training</button>
+          <button className={btn} disabled={running || (chk && !chk.ok) || !ov.yolo.installed} onClick={start}>Start training</button>
           {running && <button className={btn2} onClick={() => api('/api/studio/train/cancel', { method: 'POST' }).then(load)}>Cancel</button>}
         </div>
         {!ov.yolo.installed && <p className="mt-2 text-xs text-amber-300">ultralytics is not installed here (build with INSTALL_YOLO=1). Export the dataset and train elsewhere.</p>}
@@ -344,7 +354,10 @@ function Models({ ov, reload }) {
   useEffect(() => { load() }, [load, ov.active_model])
   const activate = async (n) => {
     setMsg('')
-    try { await api('/api/studio/models/activate', { method: 'POST', body: { name: n } }); setMsg(n ? `Activated ${n} - cameras reloaded the model.` : 'Back to the stock YOLO model.') } catch (e) { setMsg('Error: ' + e.message) }
+    const go = async (force) => { await api('/api/studio/models/activate', { method: 'POST', body: { name: n, force } }); setMsg(n ? `Activated ${n} - cameras reloaded the model.` : 'Back to the stock YOLO model.') }
+    try { await go(false) } catch (e) {
+      if (/force/i.test(e.message) && confirm(e.message.replace(/Use force.*/, '') + '\n\nActivate it anyway?')) { try { await go(true) } catch (e2) { setMsg('Error: ' + e2.message) } } else setMsg('Error: ' + e.message)
+    }
     load(); reload()
   }
   const imp = async () => {
@@ -378,7 +391,8 @@ function Models({ ov, reload }) {
           <div className="mt-1 text-xs text-slate-400">{m.source} · {new Date(m.created * 1000).toLocaleString()} {m.base && `· base ${m.base} · ${m.epochs} epochs · ${m.labeled} images`}</div>
           {m.map50 != null && (
             <div className="mt-2 text-xs">mAP50 <b>{m.map50}</b> · mAP50-95 {m.map5095} <span className={gate(m)[1]}>({gate(m)[0]})</span>
-              <div className="mt-1 flex flex-wrap gap-2">{Object.entries(m.per_class_ap50 || {}).map(([k, v]) => <span key={k} className="rounded bg-slate-950/70 px-2 py-0.5 font-mono">{k} {v}</span>)}</div></div>
+              {m.best_conf != null && <span className="ms-2 text-slate-400">live threshold {m.best_conf} (best F1 {m.best_f1}) · held out: {m.n_val} images</span>}
+              <div className="mt-1 flex flex-wrap gap-2">{Object.entries(m.per_class_ap50 || {}).map(([k, v]) => <span key={k} className="rounded bg-slate-950/70 px-2 py-0.5 font-mono">{k} AP {v}{m.per_class_precision?.[k] != null ? ` · P ${m.per_class_precision[k]} R ${m.per_class_recall?.[k]}` : ''}</span>)}</div></div>
           )}
           <div className="mt-1 text-[11px] text-slate-500">classes: {(m.classes || []).join(', ')}{!m.usable && ' - NOT usable (needs customer/staff/table_* names)'}</div>
         </div>

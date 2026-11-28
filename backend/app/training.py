@@ -8,6 +8,7 @@ Classes (fixed order - must match what the detector/state machine understand):
 from __future__ import annotations
 
 import csv
+import zlib
 import json
 import logging
 import random
@@ -284,15 +285,110 @@ class Studio:
         return out
 
     # ------------------------------------------------------------ train
+    # ------------------------------------------------------------ dataset validation
+    @staticmethod
+    def _group_of(stem: str) -> tuple[str, int]:
+        """'lunch-cam1-000123' -> ('lunch-cam1', 123): frames from one video share a group and are ordered by index."""
+        m = re.match(r"^(.*?)[-_]?(\d+)$", stem)
+        return (m.group(1), int(m.group(2))) if m else (stem, 0)
+
+    def dataset_check(self) -> dict:
+        """Pre-training validation of the labelled data: hard errors block training, warnings explain weak spots."""
+        errors: list[str] = []
+        warns: list[str] = []
+        per = {c: 0 for c in CLASSES}
+        bad = tiny = empty = labelled = 0
+        groups: set[str] = set()
+        for img in sorted((self.root / "images").glob("*.jpg")):
+            lp = self.root / "labels" / (img.stem + ".txt")
+            if not lp.exists():
+                continue
+            labelled += 1
+            groups.add(self._group_of(img.stem)[0])
+            rows = [r.split() for r in lp.read_text().splitlines() if r.strip()]
+            if not rows:
+                empty += 1
+            for r in rows:
+                try:
+                    c, cx, cy, w, h = int(r[0]), *map(float, r[1:5])
+                except (ValueError, IndexError):
+                    bad += 1
+                    continue
+                if not (0 <= c < len(CLASSES)) or w <= 0 or h <= 0 or not (0 <= cx <= 1 and 0 <= cy <= 1):
+                    bad += 1
+                    continue
+                per[CLASSES[c]] += 1
+                if w < 0.012 or h < 0.012:
+                    tiny += 1
+        total = sum(per.values())
+        if labelled < 8:
+            errors.append(f"Only {labelled} labelled images - need at least 8 to train (aim for 300+ per camera angle).")
+        elif labelled < 100:
+            warns.append(f"{labelled} labelled images is small. Expect weak accuracy; 300-500 per camera angle is recommended.")
+        if bad:
+            errors.append(f"{bad} label rows are invalid (bad class id or box outside the image). Fix them in the Label tab.")
+        if per["customer"] == 0 and labelled >= 8:
+            errors.append("No 'customer' boxes at all - the model could not learn to count guests.")
+        if per["staff"] == 0:
+            warns.append("No 'staff' boxes: staff vs customer will not be learned (waiters may be counted as guests).")
+        if per["table_clean"] + per["table_dirty"] == 0:
+            warns.append("No table_clean / table_dirty boxes: cleaning state will fall back to the item/appearance cues.")
+        elif per["table_clean"] == 0 or per["table_dirty"] == 0:
+            warns.append("Only one of table_clean / table_dirty is labelled - the model cannot tell them apart.")
+        present = [v for v in per.values() if v]
+        if len(present) > 1 and max(present) > 12 * min(present):
+            warns.append("Strong class imbalance (more than 12x) - label more of the rare class for reliable accuracy.")
+        if tiny:
+            warns.append(f"{tiny} boxes are extremely small (<1.2% of the frame) - check they are real, not stray clicks.")
+        if labelled and empty / labelled > 0.3:
+            warns.append(f"{empty} of {labelled} labelled images have no boxes - empty frames are fine in moderation but too many hurt recall.")
+        if labelled >= 8 and len(groups) <= 1:
+            warns.append("All frames come from one video/scene. The held-out check will still be optimistic: add footage from "
+                         "another time of day (lunch + dinner, bright + dim) for a trustworthy accuracy number.")
+        n_val = max(1, int(labelled * 0.2)) if labelled > 1 else 0
+        if 0 < n_val < 10:
+            warns.append(f"Validation set would be only {n_val} images - the accuracy score will be noisy.")
+        return {"ok": not errors, "errors": errors, "warnings": warns,
+                "stats": {"labeled": labelled, "boxes": total, "per_class": per, "groups": len(groups),
+                          "empty": empty, "tiny": tiny, "invalid": bad}}
+
+    def _split(self, pairs: list, val_split: float) -> set[str]:
+        """Names of the validation images. Consecutive video frames are near-identical, so a random split leaks the
+        answer into validation and inflates the score. Instead hold out whole time blocks (and keep a small gap)."""
+        by_group: dict[str, list] = {}
+        for img, lab in pairs:
+            g, i = self._group_of(img.stem)
+            by_group.setdefault(g, []).append((i, img.name))
+        stride = max(2, round(1 / max(0.05, min(0.5, val_split))))
+        block = 12
+        val: set[str] = set()
+        for g, frames in sorted(by_group.items()):
+            frames.sort()
+            nb = -(-len(frames) // block)
+            if nb >= stride * 2:
+                off = zlib.crc32(g.encode()) % stride
+                for bi in range(nb):
+                    if (bi + off) % stride == 0:
+                        val.update(n for _, n in frames[bi * block:(bi + 1) * block])
+            else:                                          # short clip: hold out its last part instead
+                k = max(1, int(len(frames) * val_split))
+                val.update(n for _, n in frames[-k:])
+        return val
+
     def _build_dataset(self, val_split: float, seed: int = 1) -> tuple[Path, int, int]:
         ds = self.root / "dataset"
         shutil.rmtree(ds, ignore_errors=True)
         pairs = [(p, self.root / "labels" / (p.stem + ".txt")) for p in sorted((self.root / "images").glob("*.jpg"))]
         pairs = [(i, l) for i, l in pairs if l.exists()]
-        random.Random(seed).shuffle(pairs)
-        n_val = max(1, int(len(pairs) * val_split)) if len(pairs) > 1 else 0
-        for k, (img, lab) in enumerate(pairs):
-            sp = "val" if k < n_val else "train"
+        val_names = self._split(pairs, val_split) if len(pairs) > 1 else set()
+        if pairs and len(val_names) in (0, len(pairs)) and len(pairs) > 1:     # degenerate -> random fallback
+            sh = pairs[:]
+            random.Random(seed).shuffle(sh)
+            val_names = {p.name for p, _ in sh[:max(1, int(len(sh) * val_split))]}
+        n_val = 0
+        for img, lab in pairs:
+            sp = "val" if img.name in val_names else "train"
+            n_val += sp == "val"
             for sub, src in (("images", img), ("labels", lab)):
                 d = ds / sub / sp
                 d.mkdir(parents=True, exist_ok=True)
@@ -344,9 +440,10 @@ class Studio:
         except ImportError:
             raise ValueError("ultralytics is not installed on this server (build with INSTALL_YOLO=1), "
                              "or export the dataset and train on a GPU machine / Colab, then import the .pt here")
+        chk = self.dataset_check()
+        if not chk["ok"]:
+            raise ValueError("dataset not ready: " + " ".join(chk["errors"]))
         st = self.stats()
-        if st["labeled"] < 8:
-            raise ValueError(f"need at least 8 labelled images, have {st['labeled']}")
         name = (p.get("name") or time.strftime("model-%Y%m%d-%H%M")).strip()
         if not NAME_RE.match(name) or (self.root / "models" / name).exists():
             raise ValueError("invalid or already used model name")
@@ -409,8 +506,9 @@ class Studio:
         (d / "meta.json").write_text(json.dumps(meta))
         return {"name": name, **meta}
 
-    def activate(self, name: str | None) -> dict:
+    def activate(self, name: str | None, force: bool = False) -> dict:
         if name:
+            self._regression_guard(name, force)
             p = self.root / "models" / name / "best.pt"
             if not p.exists():
                 raise ValueError("unknown model")
@@ -420,6 +518,26 @@ class Studio:
         self.db.set_setting("active_model", name)
         self.pipe.reload_models()
         return {"active": name}
+
+    def _regression_guard(self, name: str, force: bool) -> None:
+        """Do not put a model live that validates worse than the one running now (unless the owner insists)."""
+        if force:
+            return
+        new = self._meta(name)
+        if new.get("source") != "trained":
+            return                                   # imported models carry no validation score
+        if new.get("map50", 0) < 0.2:
+            raise ValueError(f"validation mAP50 is only {new.get('map50', 0):.2f} - this model is not ready for production "
+                             "(label more data). Use force to activate anyway.")
+        cur = self.db.get_settings().get("active_model")
+        old = self._meta(cur) if cur and cur != name else {}
+        if old.get("map50") is not None and new.get("map50", 0) < old["map50"] - 0.02:
+            raise ValueError(f"'{name}' validates worse (mAP50 {new.get('map50', 0):.2f}) than the active model "
+                             f"'{cur}' ({old['map50']:.2f}). Use force to activate anyway.")
+
+    def _meta(self, name: str | None) -> dict:
+        f = self.root / "models" / Path(name or "-").name / "meta.json"
+        return json.loads(f.read_text()) if f.exists() else {}
 
     def delete_model(self, name: str) -> None:
         if self.db.get_settings().get("active_model") == name:
